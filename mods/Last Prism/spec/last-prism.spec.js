@@ -193,6 +193,14 @@ async function test() {
   });
   divergenceBinding.definition.handlers.released();
 
+  now += 250;
+  divergenceBinding.definition.handlers.down();
+  const idleDivergenceAngles = raycastAngles.slice(-6);
+  maximumSpreadAngles.forEach((angle, index) => {
+    assert.ok(Math.abs(angle - idleDivergenceAngles[index]) < 1e-12);
+  });
+  divergenceBinding.definition.handlers.released();
+
   eventHandlers["game:started"]();
   eventHandlers["game:started"]();
   assert.deepEqual(inventory, [{ id: "paragax.last-prism" }]);

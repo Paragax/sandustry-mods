@@ -15,8 +15,8 @@ export function createBeamController(
   const BASE_BEAM_DAMAGE = 1;
 
   let beamGraphics = [];
-  let chargeStartMs = 0;
-  let charged = false;
+  let chargeProgress = 0;
+  let chargeUpdatedAtMs = null;
   let firingMode = null;
   let alternateHeld = false;
 
@@ -29,14 +29,13 @@ export function createBeamController(
 
   function resetCharge() {
     firingMode = null;
-    charged = false;
-    chargeStartMs = 0;
+    chargeProgress = 0;
+    chargeUpdatedAtMs = null;
   }
 
   function startCharge(now, mode) {
     firingMode = mode;
-    charged = false;
-    chargeStartMs = now;
+    chargeUpdatedAtMs = now;
     api.sound.play("charge_up", {
       offset: 1.5,
       volume: 0.2,
@@ -67,16 +66,23 @@ export function createBeamController(
       config.maxRangePx,
     );
 
-    if (!centralHit && !charged) {
-      chargeStartMs = now;
+    const elapsedMs = chargeUpdatedAtMs === null
+      ? 0
+      : Math.max(now - chargeUpdatedAtMs, 0);
+    chargeUpdatedAtMs = now;
+    if (!centralHit && !diverging && chargeProgress < 1) {
+      chargeProgress = 0;
+    } else {
+      const direction = diverging ? -1 : 1;
+      chargeProgress = Math.max(
+        0,
+        Math.min(1, chargeProgress + direction * elapsedMs / config.windupMs),
+      );
     }
 
-    const progress = Math.min((now - chargeStartMs) / config.windupMs, 1);
-    charged ||= progress >= 1;
-
+    const progress = chargeProgress;
     const smoothProgress = progress * progress * (3 - 2 * progress);
-    const spreadProgress = diverging ? 1 - smoothProgress : smoothProgress;
-    const spread = config.maxSpreadRadians * (1 - spreadProgress);
+    const spread = config.maxSpreadRadians * (1 - smoothProgress);
     const spin = progress * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
     const thicknessLevel = api.upgrades.getLevelById(
