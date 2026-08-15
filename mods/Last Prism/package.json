@@ -1,0 +1,11 @@
+{
+  "name": "paragax-last-prism",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "npm run build && node spec/last-prism.spec.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
