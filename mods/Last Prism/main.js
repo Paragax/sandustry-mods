@@ -22,7 +22,6 @@ function hexToLightColor(color) {
 function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent, iceMeltUpgradeId) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
-  const FOCUSED_WIDTH_MULTIPLIER = 1.5;
   const ICE_TERRAIN_TYPE = api2.terrains.getTypeFromId("ice");
   const WATER_ELEMENT_TYPE = api2.elements.getTypeFromId("water");
   let beamGraphics = [];
@@ -96,7 +95,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       itemId,
       thicknessUpgradeId
     );
-    const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel) * (focused ? FOCUSED_WIDTH_MULTIPLIER : 1);
+    const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel);
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api2.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;

@@ -14,7 +14,6 @@ export function createBeamController(
 ) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
-  const FOCUSED_WIDTH_MULTIPLIER = 1.5;
   const ICE_TERRAIN_TYPE = api.terrains.getTypeFromId("ice");
   const WATER_ELEMENT_TYPE = api.elements.getTypeFromId("water");
 
@@ -98,8 +97,7 @@ export function createBeamController(
       thicknessUpgradeId,
     );
     const width = baseWidth *
-      (1 + (thicknessPerLevelPercent / 100) * thicknessLevel) *
-      (focused ? FOCUSED_WIDTH_MULTIPLIER : 1);
+      (1 + (thicknessPerLevelPercent / 100) * thicknessLevel);
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;

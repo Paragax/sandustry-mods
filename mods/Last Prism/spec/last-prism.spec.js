@@ -178,7 +178,7 @@ async function test() {
   assert.equal(excavations.length, 7);
   assert.equal(excavations.at(-1)[4], 6);
   assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
-  assert.equal(lasers.at(-1)[4].width, 4.5);
+  assert.equal(lasers.at(-1)[4].width, 3);
 
   damageUpgradeLevel = 1;
   registered[0].handleAction(state);
@@ -186,7 +186,7 @@ async function test() {
   assert.equal(excavations.length, 8);
   assert.equal(excavations.at(-1)[4], 12);
   assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
-  assert.equal(lasers.at(-1)[4].width, 4.5);
+  assert.equal(lasers.at(-1)[4].width, 3);
 
   damageUpgradeLevel = 2;
   registered[0].handleAction(state);
@@ -201,7 +201,7 @@ async function test() {
   for (let level = 1; level <= 4; level += 1) {
     thicknessUpgradeLevel = level;
     registered[0].handleAction(state);
-    const expectedWidth = 3 * (1 + level) * 1.5;
+    const expectedWidth = 3 * (1 + level);
     assert.equal(lasers.at(-1)[4].width, expectedWidth);
   }
 
