@@ -19,7 +19,7 @@ function hexToLightColor(color) {
 }
 
 // src/beam-controller.js
-function createBeamController(api2, ActionState2, config2, excavationPattern2) {
+function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
   let beamGraphics = [];
@@ -79,6 +79,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2) {
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api2.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
+    const damageLevel = api2.upgrades.getLevelById(itemId, damageUpgradeId);
+    const damage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
     return {
       now,
       originX,
@@ -90,7 +92,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2) {
       brightness,
       cellSize,
       camera,
-      damage: BASE_BEAM_DAMAGE
+      damage
     };
   }
   function getBeamAngle(index, frame) {
@@ -208,13 +210,31 @@ function registerLastPrism({
   api: api2,
   sandkit: sandkit2,
   lastPrism: lastPrism2,
-  itemId
+  itemId,
+  damageUpgradeId,
+  damagePerLevel
 }) {
   api2.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
-    "items|paragax.lastPrism|description": "Channels six converging rainbow lasers through hard materials."
+    "items|paragax.lastPrism|description": "Channels six converging rainbow lasers through hard materials.",
+    "mods|paragax.lastPrism|upgrade|damage|name": "Prismatic Damage",
+    "mods|paragax.lastPrism|upgrade|damage|description": "Increases terrain damage from each laser (+{amount} per level)."
   });
   api2.items.register(lastPrism2);
+  api2.upgrades.register({
+    itemId,
+    itemNameKey: "items|paragax.lastPrism|name",
+    categoryId: "tools",
+    upgrade: {
+      id: damageUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|damage|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|damage|description",
+      descriptionParams: { amount: damagePerLevel },
+      maxLevel: 3,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0, 0, 0]
+    }
+  });
   api2.events.on("game:started", () => {
     const inventory = sandkit2.engine.state?.store?.player?.inventory;
     if (!inventory?.some((item) => item.id === itemId)) {
@@ -234,6 +254,8 @@ var NATIVE_WINDUP_MS = 1e3;
 var NATIVE_RANGE_PX = 1e3;
 var BEAM_COUNT = 6;
 var MAX_SPREAD_RADIANS = Math.PI / 12;
+var DAMAGE_UPGRADE_ID = "damage";
+var DAMAGE_PER_LEVEL = 1;
 var nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
   throw new Error("[Last Prism] Native laser definition was not found");
@@ -258,7 +280,10 @@ var beamController = createBeamController(
   api,
   ActionState,
   config,
-  excavationPattern
+  excavationPattern,
+  ITEM_ID,
+  DAMAGE_UPGRADE_ID,
+  DAMAGE_PER_LEVEL
 );
 var lastPrism = {
   ...nativeLaser,
@@ -282,5 +307,7 @@ registerLastPrism({
   api,
   sandkit,
   lastPrism,
-  itemId: ITEM_ID
+  itemId: ITEM_ID,
+  damageUpgradeId: DAMAGE_UPGRADE_ID,
+  damagePerLevel: DAMAGE_PER_LEVEL
 });

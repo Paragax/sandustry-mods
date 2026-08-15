@@ -10,6 +10,8 @@ const NATIVE_WINDUP_MS = 1000;
 const NATIVE_RANGE_PX = 1000;
 const BEAM_COUNT = 6;
 const MAX_SPREAD_RADIANS = Math.PI / 12;
+const DAMAGE_UPGRADE_ID = "damage";
+const DAMAGE_PER_LEVEL = 1;
 
 const nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
@@ -38,6 +40,9 @@ const beamController = createBeamController(
   ActionState,
   config,
   excavationPattern,
+  ITEM_ID,
+  DAMAGE_UPGRADE_ID,
+  DAMAGE_PER_LEVEL,
 );
 
 const lastPrism = {
@@ -63,4 +68,6 @@ registerLastPrism({
   sandkit,
   lastPrism,
   itemId: ITEM_ID,
+  damageUpgradeId: DAMAGE_UPGRADE_ID,
+  damagePerLevel: DAMAGE_PER_LEVEL,
 });

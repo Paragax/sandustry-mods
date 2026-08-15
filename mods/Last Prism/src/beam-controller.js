@@ -5,6 +5,9 @@ export function createBeamController(
   ActionState,
   config,
   excavationPattern,
+  itemId,
+  damageUpgradeId,
+  damagePerLevel,
 ) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
@@ -73,6 +76,8 @@ export function createBeamController(
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
+    const damageLevel = api.upgrades.getLevelById(itemId, damageUpgradeId);
+    const damage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
 
     return {
       now,
@@ -85,7 +90,7 @@ export function createBeamController(
       brightness,
       cellSize,
       camera,
-      damage: BASE_BEAM_DAMAGE,
+      damage,
     };
   }
 
