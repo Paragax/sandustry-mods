@@ -91,6 +91,7 @@ async function test() {
   assert.equal(registered.length, 1);
   assert.equal(registered[0].config.energyCost, 0);
   assert.equal(registered[0].sprite.ui.imageName, "paragax.last-prism.sprite");
+  assert.deepEqual(registered[0].sprite.ui.size, { width: 26, height: 30 });
   assert.equal(nativeLaser.config.energyCost, 60);
   assert.equal(registeredUpgrades.length, 2);
   const damageUpgrade = registeredUpgrades.find(

@@ -6,6 +6,7 @@ const { ActionState } = sandkit.enums;
 
 const ITEM_ID = "paragax.last-prism";
 const SPRITE_ID = "paragax.last-prism.sprite";
+const SPRITE_SIZE = { width: 26, height: 30 };
 const NATIVE_WINDUP_MS = 1000;
 const NATIVE_RANGE_PX = 1000;
 const BEAM_COUNT = 6;
@@ -60,6 +61,8 @@ const lastPrism = {
     ui: {
       ...nativeLaser.sprite.ui,
       imageName: SPRITE_ID,
+      // Hotbar rendering otherwise assumes a 16x16 source rectangle.
+      size: SPRITE_SIZE,
     },
   },
   config,
