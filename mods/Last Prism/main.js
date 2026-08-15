@@ -25,6 +25,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   let beamGraphics = [];
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
+  let animationStartMs = null;
   let firingMode = null;
   let alternateHeld = false;
   function destroyBeams() {
@@ -37,10 +38,12 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     firingMode = null;
     chargeProgress = 0;
     chargeUpdatedAtMs = null;
+    animationStartMs = null;
   }
   function startCharge(now, mode) {
     firingMode = mode;
     chargeUpdatedAtMs = now;
+    animationStartMs ??= now;
     api2.sound.play("charge_up", {
       offset: 1.5,
       volume: 0.2,
@@ -83,7 +86,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     const progress = chargeProgress;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config2.maxSpreadRadians * (1 - smoothProgress);
-    const spin = progress * Math.PI * 4;
+    const spin = (now - animationStartMs) / config2.windupMs * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
     const thicknessLevel = api2.upgrades.getLevelById(
       itemId,

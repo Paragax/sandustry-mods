@@ -199,6 +199,13 @@ async function test() {
   maximumSpreadAngles.forEach((angle, index) => {
     assert.ok(Math.abs(angle - idleDivergenceAngles[index]) < 1e-12);
   });
+
+  now += 250;
+  divergenceBinding.definition.handlers.pressed();
+  const rotatingCapAngles = raycastAngles.slice(-6);
+  assert.ok(rotatingCapAngles.some(
+    (angle, index) => Math.abs(angle - idleDivergenceAngles[index]) > 1e-12,
+  ));
   divergenceBinding.definition.handlers.released();
 
   eventHandlers["game:started"]();
