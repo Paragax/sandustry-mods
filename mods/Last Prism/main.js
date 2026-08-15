@@ -31,6 +31,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   let alternateAnimationStartMs = null;
   let firingMode = null;
   let alternateHeld = false;
+  let fullChargeFeedbackPlayed = false;
   function destroyBeams() {
     for (const beam of beamGraphics) {
       beam.destroy();
@@ -43,6 +44,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     chargeUpdatedAtMs = null;
     animationStartMs = null;
     alternateAnimationStartMs = null;
+    fullChargeFeedbackPlayed = false;
   }
   function startCharge(now, mode) {
     firingMode = mode;
@@ -205,6 +207,22 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     let hitAnything = false;
     for (let index = 0; index < beamCount; index += 1) {
       hitAnything = createBeam(index, frame) || hitAnything;
+    }
+    if (frame.focused && !fullChargeFeedbackPlayed) {
+      fullChargeFeedbackPlayed = true;
+      api2.effects.createLightAtWorld(frame.originX, frame.originY, {
+        brightness: 2,
+        duration: 250,
+        size: 450,
+        color: [1, 1, 1, 1],
+        dedupKey: "last-prism:full-charge"
+      });
+      api2.sound.play("charge_up_2", {
+        maxDuration: 0.35,
+        playbackRate: 1.5,
+        volume: 0.25,
+        maxInstances: 1
+      });
     }
     api2.effects.createLightAtWorld(frame.originX, frame.originY, {
       brightness: 0.8 * frame.brightness,

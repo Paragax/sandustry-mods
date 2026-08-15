@@ -13,6 +13,7 @@ async function test() {
   const inputBindings = {};
   const raycastAngles = [];
   const lasers = [];
+  const lights = [];
   const excavations = [];
   const elementReplacements = [];
   const sounds = [];
@@ -38,7 +39,7 @@ async function test() {
         lasers.push(args);
         return { destroy: noop };
       },
-      createLightAtWorld: noop,
+      createLightAtWorld: (...args) => lights.push(args),
       createParticlesAtWorld: noop,
     },
     elements: {
@@ -178,12 +179,24 @@ async function test() {
 
   now = 1000;
   state.session.action.state = { 2: true };
+  const fullChargeSoundsBefore = sounds.filter(
+    (id) => id === "charge_up_2",
+  ).length;
   registered[0].handleAction(state);
   assert.equal(lasers.length, 7);
   assert.equal(excavations.length, 7);
   assert.equal(excavations.at(-1)[4], 6);
   assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
   assert.equal(lasers.at(-1)[4].width, 3);
+  assert.equal(
+    lights.filter((light) => light[2].dedupKey === "last-prism:full-charge")
+      .length,
+    1,
+  );
+  assert.equal(
+    sounds.filter((id) => id === "charge_up_2").length,
+    fullChargeSoundsBefore + 1,
+  );
 
   damageUpgradeLevel = 1;
   registered[0].handleAction(state);
@@ -192,6 +205,11 @@ async function test() {
   assert.equal(excavations.at(-1)[4], 12);
   assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
   assert.equal(lasers.at(-1)[4].width, 3);
+  assert.equal(
+    lights.filter((light) => light[2].dedupKey === "last-prism:full-charge")
+      .length,
+    1,
+  );
 
   damageUpgradeLevel = 2;
   registered[0].handleAction(state);

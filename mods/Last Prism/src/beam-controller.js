@@ -24,6 +24,7 @@ export function createBeamController(
   let alternateAnimationStartMs = null;
   let firingMode = null;
   let alternateHeld = false;
+  let fullChargeFeedbackPlayed = false;
 
   function destroyBeams() {
     for (const beam of beamGraphics) {
@@ -38,6 +39,7 @@ export function createBeamController(
     chargeUpdatedAtMs = null;
     animationStartMs = null;
     alternateAnimationStartMs = null;
+    fullChargeFeedbackPlayed = false;
   }
 
   function startCharge(now, mode) {
@@ -233,6 +235,23 @@ export function createBeamController(
     let hitAnything = false;
     for (let index = 0; index < beamCount; index += 1) {
       hitAnything = createBeam(index, frame) || hitAnything;
+    }
+
+    if (frame.focused && !fullChargeFeedbackPlayed) {
+      fullChargeFeedbackPlayed = true;
+      api.effects.createLightAtWorld(frame.originX, frame.originY, {
+        brightness: 2,
+        duration: 250,
+        size: 450,
+        color: [1, 1, 1, 1],
+        dedupKey: "last-prism:full-charge",
+      });
+      api.sound.play("charge_up_2", {
+        maxDuration: 0.35,
+        playbackRate: 1.5,
+        volume: 0.25,
+        maxInstances: 1,
+      });
     }
 
     api.effects.createLightAtWorld(frame.originX, frame.originY, {
