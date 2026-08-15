@@ -172,48 +172,57 @@ async function test() {
   assert.equal(new Set(lasers.map((laser) => laser[4].color)).size, 6);
 
   now = 1000;
-  damageUpgradeLevel = 1;
   state.session.action.state = { 2: true };
   registered[0].handleAction(state);
-  assert.equal(excavations.length, 12);
-  assert.ok(excavations.slice(-6).every((excavation) => excavation[4] === 2));
-  assert.equal(new Set(raycastAngles.slice(-6)).size, 1);
+  assert.equal(lasers.length, 7);
+  assert.equal(excavations.length, 7);
+  assert.equal(excavations.at(-1)[4], 6);
+  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
+  assert.equal(lasers.at(-1)[4].width, 4.5);
+
+  damageUpgradeLevel = 1;
+  registered[0].handleAction(state);
+  assert.equal(lasers.length, 8);
+  assert.equal(excavations.length, 8);
+  assert.equal(excavations.at(-1)[4], 12);
+  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
+  assert.equal(lasers.at(-1)[4].width, 4.5);
 
   damageUpgradeLevel = 2;
   registered[0].handleAction(state);
-  assert.equal(excavations.length, 18);
-  assert.ok(excavations.slice(-6).every((excavation) => excavation[4] === 3));
+  assert.equal(excavations.length, 9);
+  assert.equal(excavations.at(-1)[4], 18);
 
   damageUpgradeLevel = 3;
   registered[0].handleAction(state);
-  assert.equal(excavations.length, 24);
-  assert.ok(excavations.slice(-6).every((excavation) => excavation[4] === 4));
+  assert.equal(excavations.length, 10);
+  assert.equal(excavations.at(-1)[4], 24);
 
   for (let level = 1; level <= 4; level += 1) {
     thicknessUpgradeLevel = level;
     registered[0].handleAction(state);
-    const expectedWidth = 3 * (1 + level);
-    assert.ok(lasers.slice(-6).every((laser) => laser[4].width === expectedWidth));
+    const expectedWidth = 3 * (1 + level) * 1.5;
+    assert.equal(lasers.at(-1)[4].width, expectedWidth);
   }
 
   terrainTypeAtHit = 25;
   const excavationsBeforeIce = excavations.length;
   registered[0].handleAction(state);
-  assert.equal(excavations.length, excavationsBeforeIce + 6);
+  assert.equal(excavations.length, excavationsBeforeIce + 1);
   assert.equal(elementReplacements.length, 0);
 
   iceMeltUpgradeLevel = 1;
   registered[0].handleAction(state);
-  assert.equal(excavations.length, excavationsBeforeIce + 6);
-  assert.equal(elementReplacements.length, 6);
+  assert.equal(excavations.length, excavationsBeforeIce + 1);
+  assert.equal(elementReplacements.length, 1);
   assert.ok(elementReplacements.every(
     ([x, y, elementType]) => x === 10 && y === 20 && elementType === 4,
   ));
 
   terrainTypeAtHit = 23;
   registered[0].handleAction(state);
-  assert.equal(excavations.length, excavationsBeforeIce + 12);
-  assert.equal(elementReplacements.length, 6);
+  assert.equal(excavations.length, excavationsBeforeIce + 2);
+  assert.equal(elementReplacements.length, 1);
 
   const lasersBeforeUnlock = lasers.length;
   divergenceBinding.definition.handlers.down();
@@ -221,7 +230,8 @@ async function test() {
 
   divergenceUpgradeLevel = 1;
   divergenceBinding.definition.handlers.down();
-  assert.equal(new Set(raycastAngles.slice(-6)).size, 1);
+  assert.equal(lasers.length, lasersBeforeUnlock + 1);
+  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
 
   now += 500;
   divergenceBinding.definition.handlers.pressed();

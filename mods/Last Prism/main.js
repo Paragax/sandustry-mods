@@ -22,6 +22,7 @@ function hexToLightColor(color) {
 function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent, iceMeltUpgradeId) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
+  const FOCUSED_WIDTH_MULTIPLIER = 1.5;
   const ICE_TERRAIN_TYPE = api2.terrains.getTypeFromId("ice");
   const WATER_ELEMENT_TYPE = api2.elements.getTypeFromId("water");
   let beamGraphics = [];
@@ -86,6 +87,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       );
     }
     const progress = chargeProgress;
+    const focused = progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config2.maxSpreadRadians * (1 - smoothProgress);
     const spin = (now - animationStartMs) / config2.windupMs * Math.PI * 4;
@@ -94,12 +96,13 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       itemId,
       thicknessUpgradeId
     );
-    const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel);
+    const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel) * (focused ? FOCUSED_WIDTH_MULTIPLIER : 1);
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api2.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
     const damageLevel = api2.upgrades.getLevelById(itemId, damageUpgradeId);
-    const damage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
+    const perBeamDamage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
+    const damage = perBeamDamage * (focused ? config2.beamCount : 1);
     const meltsIce = api2.upgrades.getLevelById(itemId, iceMeltUpgradeId) > 0;
     return {
       now,
@@ -113,10 +116,14 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       cellSize,
       camera,
       damage,
+      focused,
       meltsIce
     };
   }
   function getBeamAngle(index, frame) {
+    if (frame.focused) {
+      return frame.aimAngle;
+    }
     const lane = (index - (config2.beamCount - 1) / 2) / ((config2.beamCount - 1) / 2);
     const wobble = Math.sin(frame.spin + index * Math.PI * 2 / config2.beamCount) * frame.spread * 0.25;
     return frame.aimAngle + lane * frame.spread + wobble;
@@ -190,8 +197,9 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   }
   function renderBeams(state, now, diverging) {
     const frame = getBeamFrame(state, now, diverging);
+    const beamCount = frame.focused ? 1 : config2.beamCount;
     let hitAnything = false;
-    for (let index = 0; index < config2.beamCount; index += 1) {
+    for (let index = 0; index < beamCount; index += 1) {
       hitAnything = createBeam(index, frame) || hitAnything;
     }
     api2.effects.createLightAtWorld(frame.originX, frame.originY, {
