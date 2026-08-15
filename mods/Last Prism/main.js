@@ -19,9 +19,11 @@ function hexToLightColor(color) {
 }
 
 // src/beam-controller.js
-function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent) {
+function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent, iceMeltUpgradeId) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
+  const ICE_TERRAIN_TYPE = api2.terrains.getTypeFromId("ice");
+  const WATER_ELEMENT_TYPE = api2.elements.getTypeFromId("water");
   let beamGraphics = [];
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
@@ -98,6 +100,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     const camera = state.session.camera;
     const damageLevel = api2.upgrades.getLevelById(itemId, damageUpgradeId);
     const damage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
+    const meltsIce = api2.upgrades.getLevelById(itemId, iceMeltUpgradeId) > 0;
     return {
       now,
       originX,
@@ -109,7 +112,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       brightness,
       cellSize,
       camera,
-      damage
+      damage,
+      meltsIce
     };
   }
   function getBeamAngle(index, frame) {
@@ -122,14 +126,22 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       x: 300 * Math.cos(angle),
       y: 300 * -Math.sin(angle)
     };
-    api2.patterns.excavateAtCell(
-      hit.x,
-      hit.y,
-      excavationPattern2,
-      outVelocity,
-      frame.damage,
-      { fromDrill: true }
-    );
+    if (frame.meltsIce && api2.terrains.getTypeAtCell(hit.x, hit.y) === ICE_TERRAIN_TYPE) {
+      api2.elements.replaceAtCellWhenIdle(
+        hit.x,
+        hit.y,
+        WATER_ELEMENT_TYPE
+      );
+    } else {
+      api2.patterns.excavateAtCell(
+        hit.x,
+        hit.y,
+        excavationPattern2,
+        outVelocity,
+        frame.damage,
+        { fromDrill: true }
+      );
+    }
     api2.effects.createLightAtWorld(endX, endY, {
       brightness: frame.brightness,
       duration: 300,
@@ -271,7 +283,8 @@ function registerLastPrism({
   thicknessUpgradeId,
   thicknessPerLevelPercent,
   divergenceUpgradeId,
-  divergenceBindingId
+  divergenceBindingId,
+  iceMeltUpgradeId
 }) {
   api2.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
@@ -282,6 +295,8 @@ function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level).",
     "mods|paragax.lastPrism|upgrade|divergence|name": "Divergent Refraction",
     "mods|paragax.lastPrism|upgrade|divergence|description": "Unlocks right-click fire that diverges during windup.",
+    "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
+    "mods|paragax.lastPrism|upgrade|iceMelt|description": "Allows each beam to melt ice into water.",
     "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire"
   });
   api2.items.register(lastPrism2);
@@ -317,6 +332,18 @@ function registerLastPrism({
       id: divergenceUpgradeId,
       nameKey: "mods|paragax.lastPrism|upgrade|divergence|name",
       descriptionKey: "mods|paragax.lastPrism|upgrade|divergence|description",
+      maxLevel: 1,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0],
+      oneOff: true
+    }
+  });
+  api2.upgrades.register({
+    itemId,
+    upgrade: {
+      id: iceMeltUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|iceMelt|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|iceMelt|description",
       maxLevel: 1,
       // TODO: Replace temporary zero upgrade costs after balance testing.
       costs: [0],
@@ -370,6 +397,7 @@ var THICKNESS_UPGRADE_ID = "thickness";
 var THICKNESS_PER_LEVEL_PERCENT = 100;
 var DIVERGENCE_UPGRADE_ID = "divergence";
 var DIVERGENCE_BINDING_ID = "paragax.last-prism.diverge";
+var ICE_MELT_UPGRADE_ID = "iceMelt";
 var nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
   throw new Error("[Last Prism] Native laser definition was not found");
@@ -399,7 +427,8 @@ var beamController = createBeamController(
   DAMAGE_UPGRADE_ID,
   DAMAGE_PER_LEVEL,
   THICKNESS_UPGRADE_ID,
-  THICKNESS_PER_LEVEL_PERCENT
+  THICKNESS_PER_LEVEL_PERCENT,
+  ICE_MELT_UPGRADE_ID
 );
 var lastPrism = {
   ...nativeLaser,
@@ -431,5 +460,6 @@ registerLastPrism({
   thicknessUpgradeId: THICKNESS_UPGRADE_ID,
   thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT,
   divergenceUpgradeId: DIVERGENCE_UPGRADE_ID,
-  divergenceBindingId: DIVERGENCE_BINDING_ID
+  divergenceBindingId: DIVERGENCE_BINDING_ID,
+  iceMeltUpgradeId: ICE_MELT_UPGRADE_ID
 });

@@ -14,10 +14,13 @@ async function test() {
   const raycastAngles = [];
   const lasers = [];
   const excavations = [];
+  const elementReplacements = [];
   const inventory = [];
   let damageUpgradeLevel = 0;
   let thicknessUpgradeLevel = 0;
   let divergenceUpgradeLevel = 0;
+  let iceMeltUpgradeLevel = 0;
+  let terrainTypeAtHit = 23;
   let now = 0;
 
   const nativeLaser = {
@@ -36,6 +39,10 @@ async function test() {
       },
       createLightAtWorld: noop,
       createParticlesAtWorld: noop,
+    },
+    elements: {
+      getTypeFromId: (id) => ({ water: 4 })[id],
+      replaceAtCellWhenIdle: (...args) => elementReplacements.push(args),
     },
     events: { on: (id, handler) => { eventHandlers[id] = handler; } },
     i18n: {
@@ -67,12 +74,17 @@ async function test() {
     sound: { play: noop },
     sprites: { loadFromMod: async () => {} },
     time: { getTimeMs: () => now },
+    terrains: {
+      getTypeFromId: (id) => ({ ice: 25 })[id],
+      getTypeAtCell: () => terrainTypeAtHit,
+    },
     ui: { toast: noop },
     upgrades: {
       getLevelById: (itemId, upgradeId) => ({
         damage: damageUpgradeLevel,
         thickness: thicknessUpgradeLevel,
         divergence: divergenceUpgradeLevel,
+        iceMelt: iceMeltUpgradeLevel,
       })[upgradeId] || 0,
       register: (definition) => registeredUpgrades.push(definition),
     },
@@ -103,7 +115,7 @@ async function test() {
   assert.equal(registered[0].sprite.ui.imageName, "paragax.last-prism.sprite");
   assert.deepEqual(registered[0].sprite.ui.size, { width: 26, height: 30 });
   assert.equal(nativeLaser.config.energyCost, 60);
-  assert.equal(registeredUpgrades.length, 3);
+  assert.equal(registeredUpgrades.length, 4);
   const damageUpgrade = registeredUpgrades.find(
     (definition) => definition.upgrade.id === "damage",
   );
@@ -139,6 +151,17 @@ async function test() {
   assert.deepEqual(divergenceUpgrade.upgrade.costs, [0]);
   const divergenceBinding = inputBindings["paragax.last-prism.diverge"];
   assert.deepEqual(divergenceBinding.defaultKeys, ["MouseRight"]);
+  const iceMeltUpgrade = registeredUpgrades.find(
+    (definition) => definition.upgrade.id === "iceMelt",
+  );
+  assert.equal(iceMeltUpgrade.itemId, "paragax.last-prism");
+  assert.equal(iceMeltUpgrade.upgrade.maxLevel, 1);
+  assert.equal(iceMeltUpgrade.upgrade.oneOff, true);
+  assert.deepEqual(iceMeltUpgrade.upgrade.costs, [0]);
+  assert.equal(
+    translations["mods|paragax.lastPrism|upgrade|iceMelt|description"],
+    "Allows each beam to melt ice into water.",
+  );
 
   registered[0].handleAction(state);
   assert.equal(lasers.length, 6);
@@ -172,6 +195,25 @@ async function test() {
     const expectedWidth = 3 * (1 + level);
     assert.ok(lasers.slice(-6).every((laser) => laser[4].width === expectedWidth));
   }
+
+  terrainTypeAtHit = 25;
+  const excavationsBeforeIce = excavations.length;
+  registered[0].handleAction(state);
+  assert.equal(excavations.length, excavationsBeforeIce + 6);
+  assert.equal(elementReplacements.length, 0);
+
+  iceMeltUpgradeLevel = 1;
+  registered[0].handleAction(state);
+  assert.equal(excavations.length, excavationsBeforeIce + 6);
+  assert.equal(elementReplacements.length, 6);
+  assert.ok(elementReplacements.every(
+    ([x, y, elementType]) => x === 10 && y === 20 && elementType === 4,
+  ));
+
+  terrainTypeAtHit = 23;
+  registered[0].handleAction(state);
+  assert.equal(excavations.length, excavationsBeforeIce + 12);
+  assert.equal(elementReplacements.length, 6);
 
   const lasersBeforeUnlock = lasers.length;
   divergenceBinding.definition.handlers.down();

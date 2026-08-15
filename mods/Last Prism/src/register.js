@@ -10,6 +10,7 @@ export function registerLastPrism({
   thicknessPerLevelPercent,
   divergenceUpgradeId,
   divergenceBindingId,
+  iceMeltUpgradeId,
 }) {
   api.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
@@ -25,6 +26,9 @@ export function registerLastPrism({
       "Divergent Refraction",
     "mods|paragax.lastPrism|upgrade|divergence|description":
       "Unlocks right-click fire that diverges during windup.",
+    "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
+    "mods|paragax.lastPrism|upgrade|iceMelt|description":
+      "Allows each beam to melt ice into water.",
     "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire",
   });
 
@@ -61,6 +65,18 @@ export function registerLastPrism({
       id: divergenceUpgradeId,
       nameKey: "mods|paragax.lastPrism|upgrade|divergence|name",
       descriptionKey: "mods|paragax.lastPrism|upgrade|divergence|description",
+      maxLevel: 1,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0],
+      oneOff: true,
+    },
+  });
+  api.upgrades.register({
+    itemId,
+    upgrade: {
+      id: iceMeltUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|iceMelt|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|iceMelt|description",
       maxLevel: 1,
       // TODO: Replace temporary zero upgrade costs after balance testing.
       costs: [0],

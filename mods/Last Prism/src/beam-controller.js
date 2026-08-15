@@ -10,9 +10,12 @@ export function createBeamController(
   damagePerLevel,
   thicknessUpgradeId,
   thicknessPerLevelPercent,
+  iceMeltUpgradeId,
 ) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
+  const ICE_TERRAIN_TYPE = api.terrains.getTypeFromId("ice");
+  const WATER_ELEMENT_TYPE = api.elements.getTypeFromId("water");
 
   let beamGraphics = [];
   let chargeProgress = 0;
@@ -99,6 +102,7 @@ export function createBeamController(
     const camera = state.session.camera;
     const damageLevel = api.upgrades.getLevelById(itemId, damageUpgradeId);
     const damage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
+    const meltsIce = api.upgrades.getLevelById(itemId, iceMeltUpgradeId) > 0;
 
     return {
       now,
@@ -112,6 +116,7 @@ export function createBeamController(
       cellSize,
       camera,
       damage,
+      meltsIce,
     };
   }
 
@@ -130,14 +135,25 @@ export function createBeamController(
       x: 300 * Math.cos(angle),
       y: 300 * -Math.sin(angle),
     };
-    api.patterns.excavateAtCell(
-      hit.x,
-      hit.y,
-      excavationPattern,
-      outVelocity,
-      frame.damage,
-      { fromDrill: true },
-    );
+    if (
+      frame.meltsIce &&
+      api.terrains.getTypeAtCell(hit.x, hit.y) === ICE_TERRAIN_TYPE
+    ) {
+      api.elements.replaceAtCellWhenIdle(
+        hit.x,
+        hit.y,
+        WATER_ELEMENT_TYPE,
+      );
+    } else {
+      api.patterns.excavateAtCell(
+        hit.x,
+        hit.y,
+        excavationPattern,
+        outVelocity,
+        frame.damage,
+        { fromDrill: true },
+      );
+    }
     api.effects.createLightAtWorld(endX, endY, {
       brightness: frame.brightness,
       duration: 300,

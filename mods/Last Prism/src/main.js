@@ -17,6 +17,7 @@ const THICKNESS_UPGRADE_ID = "thickness";
 const THICKNESS_PER_LEVEL_PERCENT = 100;
 const DIVERGENCE_UPGRADE_ID = "divergence";
 const DIVERGENCE_BINDING_ID = "paragax.last-prism.diverge";
+const ICE_MELT_UPGRADE_ID = "iceMelt";
 
 const nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
@@ -50,6 +51,7 @@ const beamController = createBeamController(
   DAMAGE_PER_LEVEL,
   THICKNESS_UPGRADE_ID,
   THICKNESS_PER_LEVEL_PERCENT,
+  ICE_MELT_UPGRADE_ID,
 );
 
 const lastPrism = {
@@ -84,4 +86,5 @@ registerLastPrism({
   thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT,
   divergenceUpgradeId: DIVERGENCE_UPGRADE_ID,
   divergenceBindingId: DIVERGENCE_BINDING_ID,
+  iceMeltUpgradeId: ICE_MELT_UPGRADE_ID,
 });
