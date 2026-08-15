@@ -17,6 +17,8 @@ export function createBeamController(
   let beamGraphics = [];
   let chargeStartMs = 0;
   let charged = false;
+  let firingMode = null;
+  let alternateHeld = false;
 
   function destroyBeams() {
     for (const beam of beamGraphics) {
@@ -26,11 +28,13 @@ export function createBeamController(
   }
 
   function resetCharge() {
+    firingMode = null;
     charged = false;
     chargeStartMs = 0;
   }
 
-  function startCharge(now) {
+  function startCharge(now, mode) {
+    firingMode = mode;
     charged = false;
     chargeStartMs = now;
     api.sound.play("charge_up", {
@@ -50,7 +54,7 @@ export function createBeamController(
     });
   }
 
-  function getBeamFrame(state, now) {
+  function getBeamFrame(state, now, diverging) {
     const player = state.store.player;
     const originX = player.x + player.width / 2;
     const originY = player.y + player.height / 2 + 2;
@@ -71,7 +75,8 @@ export function createBeamController(
     charged ||= progress >= 1;
 
     const smoothProgress = progress * progress * (3 - 2 * progress);
-    const spread = config.maxSpreadRadians * (1 - smoothProgress);
+    const spreadProgress = diverging ? 1 - smoothProgress : smoothProgress;
+    const spread = config.maxSpreadRadians * (1 - spreadProgress);
     const spin = progress * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
     const thicknessLevel = api.upgrades.getLevelById(
@@ -181,8 +186,8 @@ export function createBeamController(
     return true;
   }
 
-  function renderBeams(state, now) {
-    const frame = getBeamFrame(state, now);
+  function renderBeams(state, now, diverging) {
+    const frame = getBeamFrame(state, now, diverging);
     let hitAnything = false;
     for (let index = 0; index < config.beamCount; index += 1) {
       hitAnything = createBeam(index, frame) || hitAnything;
@@ -206,6 +211,10 @@ export function createBeamController(
   }
 
   function handleAction(state) {
+    if (alternateHeld) {
+      return;
+    }
+
     destroyBeams();
 
     const actionState = state.session.action.state;
@@ -223,14 +232,54 @@ export function createBeamController(
     }
 
     const now = api.time.getTimeMs();
-    if (actionState[ActionState.Start]) {
-      startCharge(now);
+    if (actionState[ActionState.Start] || firingMode !== "converge") {
+      startCharge(now, "converge");
     }
 
-    renderBeams(state, now);
+    renderBeams(state, now, false);
+  }
+
+  function handleAlternateAction(state) {
+    const starting = !alternateHeld;
+    alternateHeld = true;
+    destroyBeams();
+
+    if (!api.authorization.canUseTool(state.store.player)) {
+      if (starting) {
+        api.ui.toast("Last Prism cannot be used here");
+      }
+      resetCharge();
+      return;
+    }
+
+    const now = api.time.getTimeMs();
+    if (starting || firingMode !== "diverge") {
+      startCharge(now, "diverge");
+    }
+
+    renderBeams(state, now, true);
+  }
+
+  function stopAlternateAction() {
+    if (!alternateHeld) {
+      return;
+    }
+    alternateHeld = false;
+    destroyBeams();
+    resetCharge();
+  }
+
+  function afterRender() {
+    const active = api.action.getActive();
+    if (!active || active.id !== itemId) {
+      stopAlternateAction();
+    }
   }
 
   return {
     handleAction,
+    handleAlternateAction,
+    stopAlternateAction,
+    afterRender,
   };
 }

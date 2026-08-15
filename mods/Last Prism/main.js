@@ -25,6 +25,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   let beamGraphics = [];
   let chargeStartMs = 0;
   let charged = false;
+  let firingMode = null;
+  let alternateHeld = false;
   function destroyBeams() {
     for (const beam of beamGraphics) {
       beam.destroy();
@@ -32,10 +34,12 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     beamGraphics = [];
   }
   function resetCharge() {
+    firingMode = null;
     charged = false;
     chargeStartMs = 0;
   }
-  function startCharge(now) {
+  function startCharge(now, mode) {
+    firingMode = mode;
     charged = false;
     chargeStartMs = now;
     api2.sound.play("charge_up", {
@@ -54,7 +58,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       fadeIn: 1
     });
   }
-  function getBeamFrame(state, now) {
+  function getBeamFrame(state, now, diverging) {
     const player = state.store.player;
     const originX = player.x + player.width / 2;
     const originY = player.y + player.height / 2 + 2;
@@ -72,7 +76,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     const progress = Math.min((now - chargeStartMs) / config2.windupMs, 1);
     charged ||= progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
-    const spread = config2.maxSpreadRadians * (1 - smoothProgress);
+    const spreadProgress = diverging ? 1 - smoothProgress : smoothProgress;
+    const spread = config2.maxSpreadRadians * (1 - spreadProgress);
     const spin = progress * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
     const thicknessLevel = api2.upgrades.getLevelById(
@@ -163,8 +168,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     createImpact(index, hit, endX, endY, angle, color, frame);
     return true;
   }
-  function renderBeams(state, now) {
-    const frame = getBeamFrame(state, now);
+  function renderBeams(state, now, diverging) {
+    const frame = getBeamFrame(state, now, diverging);
     let hitAnything = false;
     for (let index = 0; index < config2.beamCount; index += 1) {
       hitAnything = createBeam(index, frame) || hitAnything;
@@ -185,6 +190,9 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     }
   }
   function handleAction(state) {
+    if (alternateHeld) {
+      return;
+    }
     destroyBeams();
     const actionState = state.session.action.state;
     if (!actionState[ActionState2.Active]) {
@@ -199,13 +207,47 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       return;
     }
     const now = api2.time.getTimeMs();
-    if (actionState[ActionState2.Start]) {
-      startCharge(now);
+    if (actionState[ActionState2.Start] || firingMode !== "converge") {
+      startCharge(now, "converge");
     }
-    renderBeams(state, now);
+    renderBeams(state, now, false);
+  }
+  function handleAlternateAction(state) {
+    const starting = !alternateHeld;
+    alternateHeld = true;
+    destroyBeams();
+    if (!api2.authorization.canUseTool(state.store.player)) {
+      if (starting) {
+        api2.ui.toast("Last Prism cannot be used here");
+      }
+      resetCharge();
+      return;
+    }
+    const now = api2.time.getTimeMs();
+    if (starting || firingMode !== "diverge") {
+      startCharge(now, "diverge");
+    }
+    renderBeams(state, now, true);
+  }
+  function stopAlternateAction() {
+    if (!alternateHeld) {
+      return;
+    }
+    alternateHeld = false;
+    destroyBeams();
+    resetCharge();
+  }
+  function afterRender() {
+    const active = api2.action.getActive();
+    if (!active || active.id !== itemId) {
+      stopAlternateAction();
+    }
   }
   return {
-    handleAction
+    handleAction,
+    handleAlternateAction,
+    stopAlternateAction,
+    afterRender
   };
 }
 
@@ -214,11 +256,14 @@ function registerLastPrism({
   api: api2,
   sandkit: sandkit2,
   lastPrism: lastPrism2,
+  beamController: beamController2,
   itemId,
   damageUpgradeId,
   damagePerLevel,
   thicknessUpgradeId,
-  thicknessPerLevelPercent
+  thicknessPerLevelPercent,
+  divergenceUpgradeId,
+  divergenceBindingId
 }) {
   api2.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
@@ -226,7 +271,10 @@ function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|damage|name": "Prismatic Damage",
     "mods|paragax.lastPrism|upgrade|damage|description": "Increases terrain damage from each laser (+{amount} per level).",
     "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
-    "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level)."
+    "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level).",
+    "mods|paragax.lastPrism|upgrade|divergence|name": "Divergent Refraction",
+    "mods|paragax.lastPrism|upgrade|divergence|description": "Unlocks right-click fire that diverges during windup.",
+    "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire"
   });
   api2.items.register(lastPrism2);
   api2.upgrades.register({
@@ -255,6 +303,39 @@ function registerLastPrism({
       costs: [0, 0, 0, 0]
     }
   });
+  api2.upgrades.register({
+    itemId,
+    upgrade: {
+      id: divergenceUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|divergence|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|divergence|description",
+      maxLevel: 1,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0],
+      oneOff: true
+    }
+  });
+  const fireDiverging = () => {
+    const active = api2.action.getActive();
+    const unlocked = api2.upgrades.getLevelById(itemId, divergenceUpgradeId) > 0;
+    if (!active || active.id !== itemId || !unlocked) {
+      beamController2.stopAlternateAction();
+      return;
+    }
+    const state = sandkit2.engine.state;
+    if (state) {
+      beamController2.handleAlternateAction(state);
+    }
+  };
+  api2.input.registerBinding(divergenceBindingId, ["MouseRight"], {
+    displayNameKey: "mods|paragax.lastPrism|input|diverge|name",
+    category: "items|paragax.lastPrism|name",
+    handlers: {
+      down: fireDiverging,
+      pressed: fireDiverging,
+      released: beamController2.stopAlternateAction
+    }
+  });
   api2.events.on("game:started", () => {
     const inventory = sandkit2.engine.state?.store?.player?.inventory;
     if (!inventory?.some((item) => item.id === itemId)) {
@@ -279,6 +360,8 @@ var DAMAGE_UPGRADE_ID = "damage";
 var DAMAGE_PER_LEVEL = 1;
 var THICKNESS_UPGRADE_ID = "thickness";
 var THICKNESS_PER_LEVEL_PERCENT = 100;
+var DIVERGENCE_UPGRADE_ID = "divergence";
+var DIVERGENCE_BINDING_ID = "paragax.last-prism.diverge";
 var nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
   throw new Error("[Last Prism] Native laser definition was not found");
@@ -327,16 +410,18 @@ var lastPrism = {
   },
   config,
   handleAction: beamController.handleAction,
-  afterRender: () => {
-  }
+  afterRender: beamController.afterRender
 };
 registerLastPrism({
   api,
   sandkit,
   lastPrism,
+  beamController,
   itemId: ITEM_ID,
   damageUpgradeId: DAMAGE_UPGRADE_ID,
   damagePerLevel: DAMAGE_PER_LEVEL,
   thicknessUpgradeId: THICKNESS_UPGRADE_ID,
-  thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT
+  thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT,
+  divergenceUpgradeId: DIVERGENCE_UPGRADE_ID,
+  divergenceBindingId: DIVERGENCE_BINDING_ID
 });

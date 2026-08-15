@@ -15,6 +15,8 @@ const DAMAGE_UPGRADE_ID = "damage";
 const DAMAGE_PER_LEVEL = 1;
 const THICKNESS_UPGRADE_ID = "thickness";
 const THICKNESS_PER_LEVEL_PERCENT = 100;
+const DIVERGENCE_UPGRADE_ID = "divergence";
+const DIVERGENCE_BINDING_ID = "paragax.last-prism.diverge";
 
 const nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
@@ -67,16 +69,19 @@ const lastPrism = {
   },
   config,
   handleAction: beamController.handleAction,
-  afterRender: () => {},
+  afterRender: beamController.afterRender,
 };
 
 registerLastPrism({
   api,
   sandkit,
   lastPrism,
+  beamController,
   itemId: ITEM_ID,
   damageUpgradeId: DAMAGE_UPGRADE_ID,
   damagePerLevel: DAMAGE_PER_LEVEL,
   thicknessUpgradeId: THICKNESS_UPGRADE_ID,
   thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT,
+  divergenceUpgradeId: DIVERGENCE_UPGRADE_ID,
+  divergenceBindingId: DIVERGENCE_BINDING_ID,
 });

@@ -2,11 +2,14 @@ export function registerLastPrism({
   api,
   sandkit,
   lastPrism,
+  beamController,
   itemId,
   damageUpgradeId,
   damagePerLevel,
   thicknessUpgradeId,
   thicknessPerLevelPercent,
+  divergenceUpgradeId,
+  divergenceBindingId,
 }) {
   api.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
@@ -18,6 +21,11 @@ export function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
     "mods|paragax.lastPrism|upgrade|thickness|description":
       "Increases thickness of each beam (+{percent}% per level).",
+    "mods|paragax.lastPrism|upgrade|divergence|name":
+      "Divergent Refraction",
+    "mods|paragax.lastPrism|upgrade|divergence|description":
+      "Unlocks right-click fire that diverges during windup.",
+    "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire",
   });
 
   api.items.register(lastPrism);
@@ -45,6 +53,43 @@ export function registerLastPrism({
       maxLevel: 4,
       // TODO: Replace temporary zero upgrade costs after balance testing.
       costs: [0, 0, 0, 0],
+    },
+  });
+  api.upgrades.register({
+    itemId,
+    upgrade: {
+      id: divergenceUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|divergence|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|divergence|description",
+      maxLevel: 1,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0],
+      oneOff: true,
+    },
+  });
+
+  const fireDiverging = () => {
+    const active = api.action.getActive();
+    const unlocked = api.upgrades.getLevelById(itemId, divergenceUpgradeId) > 0;
+    if (!active || active.id !== itemId || !unlocked) {
+      beamController.stopAlternateAction();
+      return;
+    }
+
+    // Input callbacks do not receive state. Keep this unstable escape hatch
+    // isolated until Sandustry exposes current state through the public API.
+    const state = sandkit.engine.state;
+    if (state) {
+      beamController.handleAlternateAction(state);
+    }
+  };
+  api.input.registerBinding(divergenceBindingId, ["MouseRight"], {
+    displayNameKey: "mods|paragax.lastPrism|input|diverge|name",
+    category: "items|paragax.lastPrism|name",
+    handlers: {
+      down: fireDiverging,
+      pressed: fireDiverging,
+      released: beamController.stopAlternateAction,
     },
   });
   api.events.on("game:started", () => {
