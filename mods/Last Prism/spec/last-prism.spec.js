@@ -15,6 +15,7 @@ async function test() {
   const lasers = [];
   const excavations = [];
   const elementReplacements = [];
+  const sounds = [];
   const inventory = [];
   let damageUpgradeLevel = 0;
   let thicknessUpgradeLevel = 0;
@@ -71,7 +72,7 @@ async function test() {
       },
     },
     rendering: { getGridMetrics: () => ({ cellSize: 4 }) },
-    sound: { play: noop },
+    sound: { play: (id) => sounds.push(id) },
     sprites: { loadFromMod: async () => {} },
     time: { getTimeMs: () => now },
     terrains: {
@@ -149,6 +150,10 @@ async function test() {
   assert.equal(divergenceUpgrade.upgrade.maxLevel, 1);
   assert.equal(divergenceUpgrade.upgrade.oneOff, true);
   assert.deepEqual(divergenceUpgrade.upgrade.costs, [0]);
+  assert.equal(
+    translations["mods|paragax.lastPrism|upgrade|divergence|description"],
+    "Unlocks six revolving, wide-spread beams on right-click.",
+  );
   const divergenceBinding = inputBindings["paragax.last-prism.diverge"];
   assert.deepEqual(divergenceBinding.defaultKeys, ["MouseRight"]);
   const iceMeltUpgrade = registeredUpgrades.find(
@@ -229,35 +234,40 @@ async function test() {
   assert.equal(lasers.length, lasersBeforeUnlock);
 
   divergenceUpgradeLevel = 1;
+  const chargeSoundsBeforeAlternate = sounds.filter(
+    (id) => id.startsWith("charge_up"),
+  ).length;
   divergenceBinding.definition.handlers.down();
-  assert.equal(lasers.length, lasersBeforeUnlock + 1);
-  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
-
-  now += 500;
-  divergenceBinding.definition.handlers.pressed();
-  assert.ok(new Set(raycastAngles.slice(-6)).size > 1);
-
-  now += 500;
-  divergenceBinding.definition.handlers.pressed();
-  const finalDivergenceAngles = raycastAngles.slice(-6);
+  assert.equal(lasers.length, lasersBeforeUnlock + 6);
+  const alternateStartAngles = raycastAngles.slice(-6);
   maximumSpreadAngles.forEach((angle, index) => {
-    assert.ok(Math.abs(angle - finalDivergenceAngles[index]) < 1e-12);
+    assert.ok(Math.abs(angle - alternateStartAngles[index]) < 1e-12);
   });
-  divergenceBinding.definition.handlers.released();
-
-  now += 250;
-  divergenceBinding.definition.handlers.down();
-  const idleDivergenceAngles = raycastAngles.slice(-6);
-  maximumSpreadAngles.forEach((angle, index) => {
-    assert.ok(Math.abs(angle - idleDivergenceAngles[index]) < 1e-12);
-  });
-
-  now += 250;
-  divergenceBinding.definition.handlers.pressed();
-  const rotatingCapAngles = raycastAngles.slice(-6);
-  assert.ok(rotatingCapAngles.some(
-    (angle, index) => Math.abs(angle - idleDivergenceAngles[index]) > 1e-12,
+  assert.ok(lasers.slice(-6).every(
+    (laser) => laser[4].width === 15 && laser[4].brightness === 1,
   ));
+  assert.equal(
+    sounds.filter((id) => id.startsWith("charge_up")).length,
+    chargeSoundsBeforeAlternate,
+  );
+
+  now += 250;
+  divergenceBinding.definition.handlers.pressed();
+  const rotatingAlternateAngles = raycastAngles.slice(-6);
+  assert.ok(rotatingAlternateAngles.some(
+    (angle, index) => Math.abs(angle - alternateStartAngles[index]) > 1e-12,
+  ));
+
+  now += 750;
+  divergenceBinding.definition.handlers.pressed();
+  const fullRevolutionAngles = raycastAngles.slice(-6);
+  maximumSpreadAngles.forEach((angle, index) => {
+    assert.ok(Math.abs(angle - fullRevolutionAngles[index]) < 1e-12);
+  });
+  assert.equal(
+    sounds.filter((id) => id.startsWith("charge_up")).length,
+    chargeSoundsBeforeAlternate,
+  );
   divergenceBinding.definition.handlers.released();
 
   eventHandlers["game:started"]();

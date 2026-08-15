@@ -28,6 +28,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
   let animationStartMs = null;
+  let alternateAnimationStartMs = null;
   let firingMode = null;
   let alternateHeld = false;
   function destroyBeams() {
@@ -41,6 +42,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     chargeProgress = 0;
     chargeUpdatedAtMs = null;
     animationStartMs = null;
+    alternateAnimationStartMs = null;
   }
   function startCharge(now, mode) {
     firingMode = mode;
@@ -62,41 +64,44 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       fadeIn: 1
     });
   }
-  function getBeamFrame(state, now, diverging) {
+  function getBeamFrame(state, now, alternate) {
     const player = state.store.player;
     const originX = player.x + player.width / 2;
     const originY = player.y + player.height / 2 + 2;
     const mouse = state.session.input.mouse.worldPosition;
     const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
-    const centralHit = api2.raycast.castFromWorld(
-      originX,
-      originY,
-      aimAngle,
-      config2.maxRangePx
-    );
-    const elapsedMs = chargeUpdatedAtMs === null ? 0 : Math.max(now - chargeUpdatedAtMs, 0);
-    chargeUpdatedAtMs = now;
-    if (!centralHit && !diverging && chargeProgress < 1) {
-      chargeProgress = 0;
-    } else {
-      const direction = diverging ? -1 : 1;
-      chargeProgress = Math.max(
-        0,
-        Math.min(1, chargeProgress + direction * elapsedMs / config2.windupMs)
+    if (!alternate) {
+      const centralHit = api2.raycast.castFromWorld(
+        originX,
+        originY,
+        aimAngle,
+        config2.maxRangePx
       );
+      const elapsedMs = chargeUpdatedAtMs === null ? 0 : Math.max(now - chargeUpdatedAtMs, 0);
+      chargeUpdatedAtMs = now;
+      if (!centralHit && chargeProgress < 1) {
+        chargeProgress = 0;
+      } else {
+        chargeProgress = Math.max(
+          0,
+          Math.min(1, chargeProgress + elapsedMs / config2.windupMs)
+        );
+      }
     }
-    const progress = chargeProgress;
-    const focused = progress >= 1;
+    const progress = alternate ? 0 : chargeProgress;
+    const visualProgress = alternate ? 1 : progress;
+    const focused = !alternate && progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config2.maxSpreadRadians * (1 - smoothProgress);
-    const spin = (now - animationStartMs) / config2.windupMs * Math.PI * 4;
-    const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
+    const animationStart = alternate ? alternateAnimationStartMs : animationStartMs;
+    const spin = (now - animationStart) / config2.windupMs * Math.PI * 4;
+    const baseWidth = visualProgress < 1 ? 1 + 2 * visualProgress : 3;
     const thicknessLevel = api2.upgrades.getLevelById(
       itemId,
       thicknessUpgradeId
     );
     const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel);
-    const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
+    const brightness = alternate ? 1 : progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api2.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
     const damageLevel = api2.upgrades.getLevelById(itemId, damageUpgradeId);
@@ -194,8 +199,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     createImpact(index, hit, endX, endY, angle, color, frame);
     return true;
   }
-  function renderBeams(state, now, diverging) {
-    const frame = getBeamFrame(state, now, diverging);
+  function renderBeams(state, now, alternate) {
+    const frame = getBeamFrame(state, now, alternate);
     const beamCount = frame.focused ? 1 : config2.beamCount;
     let hitAnything = false;
     for (let index = 0; index < beamCount; index += 1) {
@@ -251,8 +256,9 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       return;
     }
     const now = api2.time.getTimeMs();
-    if (starting || firingMode !== "diverge") {
-      startCharge(now, "diverge");
+    if (starting) {
+      resetCharge();
+      alternateAnimationStartMs = now;
     }
     renderBeams(state, now, true);
   }
@@ -301,7 +307,7 @@ function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
     "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level).",
     "mods|paragax.lastPrism|upgrade|divergence|name": "Divergent Refraction",
-    "mods|paragax.lastPrism|upgrade|divergence|description": "Unlocks right-click fire that diverges during windup.",
+    "mods|paragax.lastPrism|upgrade|divergence|description": "Unlocks six revolving, wide-spread beams on right-click.",
     "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
     "mods|paragax.lastPrism|upgrade|iceMelt|description": "Allows each beam to melt ice into water.",
     "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire"

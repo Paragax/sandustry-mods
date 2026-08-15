@@ -21,6 +21,7 @@ export function createBeamController(
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
   let animationStartMs = null;
+  let alternateAnimationStartMs = null;
   let firingMode = null;
   let alternateHeld = false;
 
@@ -36,6 +37,7 @@ export function createBeamController(
     chargeProgress = 0;
     chargeUpdatedAtMs = null;
     animationStartMs = null;
+    alternateAnimationStartMs = null;
   }
 
   function startCharge(now, mode) {
@@ -59,46 +61,54 @@ export function createBeamController(
     });
   }
 
-  function getBeamFrame(state, now, diverging) {
+  function getBeamFrame(state, now, alternate) {
     const player = state.store.player;
     const originX = player.x + player.width / 2;
     const originY = player.y + player.height / 2 + 2;
     const mouse = state.session.input.mouse.worldPosition;
     const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
-    const centralHit = api.raycast.castFromWorld(
-      originX,
-      originY,
-      aimAngle,
-      config.maxRangePx,
-    );
-
-    const elapsedMs = chargeUpdatedAtMs === null
-      ? 0
-      : Math.max(now - chargeUpdatedAtMs, 0);
-    chargeUpdatedAtMs = now;
-    if (!centralHit && !diverging && chargeProgress < 1) {
-      chargeProgress = 0;
-    } else {
-      const direction = diverging ? -1 : 1;
-      chargeProgress = Math.max(
-        0,
-        Math.min(1, chargeProgress + direction * elapsedMs / config.windupMs),
+    if (!alternate) {
+      const centralHit = api.raycast.castFromWorld(
+        originX,
+        originY,
+        aimAngle,
+        config.maxRangePx,
       );
+      const elapsedMs = chargeUpdatedAtMs === null
+        ? 0
+        : Math.max(now - chargeUpdatedAtMs, 0);
+      chargeUpdatedAtMs = now;
+      if (!centralHit && chargeProgress < 1) {
+        chargeProgress = 0;
+      } else {
+        chargeProgress = Math.max(
+          0,
+          Math.min(1, chargeProgress + elapsedMs / config.windupMs),
+        );
+      }
     }
 
-    const progress = chargeProgress;
-    const focused = progress >= 1;
+    const progress = alternate ? 0 : chargeProgress;
+    const visualProgress = alternate ? 1 : progress;
+    const focused = !alternate && progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config.maxSpreadRadians * (1 - smoothProgress);
-    const spin = ((now - animationStartMs) / config.windupMs) * Math.PI * 4;
-    const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
+    const animationStart = alternate
+      ? alternateAnimationStartMs
+      : animationStartMs;
+    const spin = ((now - animationStart) / config.windupMs) * Math.PI * 4;
+    const baseWidth = visualProgress < 1
+      ? 1 + 2 * visualProgress
+      : 3;
     const thicknessLevel = api.upgrades.getLevelById(
       itemId,
       thicknessUpgradeId,
     );
     const width = baseWidth *
       (1 + (thicknessPerLevelPercent / 100) * thicknessLevel);
-    const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
+    const brightness = alternate
+      ? 1
+      : progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
     const damageLevel = api.upgrades.getLevelById(itemId, damageUpgradeId);
@@ -217,8 +227,8 @@ export function createBeamController(
     return true;
   }
 
-  function renderBeams(state, now, diverging) {
-    const frame = getBeamFrame(state, now, diverging);
+  function renderBeams(state, now, alternate) {
+    const frame = getBeamFrame(state, now, alternate);
     const beamCount = frame.focused ? 1 : config.beamCount;
     let hitAnything = false;
     for (let index = 0; index < beamCount; index += 1) {
@@ -285,8 +295,9 @@ export function createBeamController(
     }
 
     const now = api.time.getTimeMs();
-    if (starting || firingMode !== "diverge") {
-      startCharge(now, "diverge");
+    if (starting) {
+      resetCharge();
+      alternateAnimationStartMs = now;
     }
 
     renderBeams(state, now, true);

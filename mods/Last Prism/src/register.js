@@ -25,7 +25,7 @@ export function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|divergence|name":
       "Divergent Refraction",
     "mods|paragax.lastPrism|upgrade|divergence|description":
-      "Unlocks right-click fire that diverges during windup.",
+      "Unlocks six revolving, wide-spread beams on right-click.",
     "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
     "mods|paragax.lastPrism|upgrade|iceMelt|description":
       "Allows each beam to melt ice into water.",
