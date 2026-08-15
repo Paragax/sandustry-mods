@@ -91,7 +91,6 @@ export function createBeamController(
     }
 
     const progress = alternate ? 0 : chargeProgress;
-    const visualProgress = alternate ? 1 : progress;
     const focused = !alternate && progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config.maxSpreadRadians * (1 - smoothProgress);
@@ -99,9 +98,7 @@ export function createBeamController(
       ? alternateAnimationStartMs
       : animationStartMs;
     const spin = ((now - animationStart) / config.windupMs) * Math.PI * 4;
-    const baseWidth = visualProgress < 1
-      ? 1 + 2 * visualProgress
-      : 3;
+    const baseWidth = 1 + 2 * progress;
     const thicknessLevel = api.upgrades.getLevelById(
       itemId,
       thicknessUpgradeId,

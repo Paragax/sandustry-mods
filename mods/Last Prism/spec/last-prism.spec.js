@@ -262,8 +262,9 @@ async function test() {
     assert.ok(Math.abs(angle - alternateStartAngles[index]) < 1e-12);
   });
   assert.ok(lasers.slice(-6).every(
-    (laser) => laser[4].width === 15 && laser[4].brightness === 1,
+    (laser) => laser[4].width === 5 && laser[4].brightness === 1,
   ));
+  assert.ok(excavations.slice(-6).every((excavation) => excavation[4] === 4));
   assert.equal(
     sounds.filter((id) => id.startsWith("charge_up")).length,
     chargeSoundsBeforeAlternate,
