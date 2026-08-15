@@ -8,6 +8,8 @@ export function createBeamController(
   itemId,
   damageUpgradeId,
   damagePerLevel,
+  thicknessUpgradeId,
+  thicknessPerLevelPercent,
 ) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
@@ -72,7 +74,12 @@ export function createBeamController(
     const spread = config.maxSpreadRadians * (1 - smoothProgress);
     const spin = progress * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
-    const width = baseWidth;
+    const thicknessLevel = api.upgrades.getLevelById(
+      itemId,
+      thicknessUpgradeId,
+    );
+    const width = baseWidth *
+      (1 + (thicknessPerLevelPercent / 100) * thicknessLevel);
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;

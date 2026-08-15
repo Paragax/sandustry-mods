@@ -15,6 +15,7 @@ async function test() {
   const excavations = [];
   const inventory = [];
   let damageUpgradeLevel = 0;
+  let thicknessUpgradeLevel = 0;
   let now = 0;
 
   const nativeLaser = {
@@ -59,7 +60,10 @@ async function test() {
     time: { getTimeMs: () => now },
     ui: { toast: noop },
     upgrades: {
-      getLevelById: () => damageUpgradeLevel,
+      getLevelById: (itemId, upgradeId) => ({
+        damage: damageUpgradeLevel,
+        thickness: thicknessUpgradeLevel,
+      })[upgradeId] || 0,
       register: (definition) => registeredUpgrades.push(definition),
     },
   };
@@ -88,8 +92,10 @@ async function test() {
   assert.equal(registered[0].config.energyCost, 0);
   assert.equal(registered[0].sprite.ui.imageName, "paragax.last-prism.sprite");
   assert.equal(nativeLaser.config.energyCost, 60);
-  assert.equal(registeredUpgrades.length, 1);
-  const damageUpgrade = registeredUpgrades[0];
+  assert.equal(registeredUpgrades.length, 2);
+  const damageUpgrade = registeredUpgrades.find(
+    (definition) => definition.upgrade.id === "damage",
+  );
   assert.equal(damageUpgrade.itemId, "paragax.last-prism");
   assert.equal(damageUpgrade.categoryId, "tools");
   assert.equal(damageUpgrade.upgrade.maxLevel, 3);
@@ -98,6 +104,20 @@ async function test() {
   assert.equal(
     translations["mods|paragax.lastPrism|upgrade|damage|description"],
     "Increases terrain damage from each laser (+{amount} per level).",
+  );
+  const thicknessUpgrade = registeredUpgrades.find(
+    (definition) => definition.upgrade.id === "thickness",
+  );
+  assert.equal(thicknessUpgrade.itemId, "paragax.last-prism");
+  assert.equal(thicknessUpgrade.upgrade.maxLevel, 4);
+  assert.deepEqual(
+    thicknessUpgrade.upgrade.descriptionParams,
+    { percent: 100 },
+  );
+  assert.deepEqual(thicknessUpgrade.upgrade.costs, [0, 0, 0, 0]);
+  assert.equal(
+    translations["mods|paragax.lastPrism|upgrade|thickness|description"],
+    "Increases thickness of each beam (+{percent}% per level).",
   );
 
   registered[0].handleAction(state);
@@ -124,6 +144,13 @@ async function test() {
   registered[0].handleAction(state);
   assert.equal(excavations.length, 24);
   assert.ok(excavations.slice(-6).every((excavation) => excavation[4] === 4));
+
+  for (let level = 1; level <= 4; level += 1) {
+    thicknessUpgradeLevel = level;
+    registered[0].handleAction(state);
+    const expectedWidth = 3 * (1 + level);
+    assert.ok(lasers.slice(-6).every((laser) => laser[4].width === expectedWidth));
+  }
 
   eventHandlers["game:started"]();
   eventHandlers["game:started"]();

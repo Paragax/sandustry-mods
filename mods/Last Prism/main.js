@@ -19,7 +19,7 @@ function hexToLightColor(color) {
 }
 
 // src/beam-controller.js
-function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel) {
+function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent) {
   const COLOR_CYCLE_MS = 1800;
   const BASE_BEAM_DAMAGE = 1;
   let beamGraphics = [];
@@ -75,7 +75,11 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     const spread = config2.maxSpreadRadians * (1 - smoothProgress);
     const spin = progress * Math.PI * 4;
     const baseWidth = progress < 1 ? 1 + 2 * progress : 3;
-    const width = baseWidth;
+    const thicknessLevel = api2.upgrades.getLevelById(
+      itemId,
+      thicknessUpgradeId
+    );
+    const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel);
     const brightness = progress < 1 ? 0.1 + 0.4 * progress : 1;
     const cellSize = api2.rendering.getGridMetrics().cellSize;
     const camera = state.session.camera;
@@ -212,13 +216,17 @@ function registerLastPrism({
   lastPrism: lastPrism2,
   itemId,
   damageUpgradeId,
-  damagePerLevel
+  damagePerLevel,
+  thicknessUpgradeId,
+  thicknessPerLevelPercent
 }) {
   api2.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
     "items|paragax.lastPrism|description": "Channels six converging rainbow lasers through hard materials.",
     "mods|paragax.lastPrism|upgrade|damage|name": "Prismatic Damage",
-    "mods|paragax.lastPrism|upgrade|damage|description": "Increases terrain damage from each laser (+{amount} per level)."
+    "mods|paragax.lastPrism|upgrade|damage|description": "Increases terrain damage from each laser (+{amount} per level).",
+    "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
+    "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level)."
   });
   api2.items.register(lastPrism2);
   api2.upgrades.register({
@@ -233,6 +241,18 @@ function registerLastPrism({
       maxLevel: 3,
       // TODO: Replace temporary zero upgrade costs after balance testing.
       costs: [0, 0, 0]
+    }
+  });
+  api2.upgrades.register({
+    itemId,
+    upgrade: {
+      id: thicknessUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|thickness|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|thickness|description",
+      descriptionParams: { percent: thicknessPerLevelPercent },
+      maxLevel: 4,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0, 0, 0, 0]
     }
   });
   api2.events.on("game:started", () => {
@@ -256,6 +276,8 @@ var BEAM_COUNT = 6;
 var MAX_SPREAD_RADIANS = Math.PI / 12;
 var DAMAGE_UPGRADE_ID = "damage";
 var DAMAGE_PER_LEVEL = 1;
+var THICKNESS_UPGRADE_ID = "thickness";
+var THICKNESS_PER_LEVEL_PERCENT = 100;
 var nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
   throw new Error("[Last Prism] Native laser definition was not found");
@@ -283,7 +305,9 @@ var beamController = createBeamController(
   excavationPattern,
   ITEM_ID,
   DAMAGE_UPGRADE_ID,
-  DAMAGE_PER_LEVEL
+  DAMAGE_PER_LEVEL,
+  THICKNESS_UPGRADE_ID,
+  THICKNESS_PER_LEVEL_PERCENT
 );
 var lastPrism = {
   ...nativeLaser,
@@ -309,5 +333,7 @@ registerLastPrism({
   lastPrism,
   itemId: ITEM_ID,
   damageUpgradeId: DAMAGE_UPGRADE_ID,
-  damagePerLevel: DAMAGE_PER_LEVEL
+  damagePerLevel: DAMAGE_PER_LEVEL,
+  thicknessUpgradeId: THICKNESS_UPGRADE_ID,
+  thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT
 });

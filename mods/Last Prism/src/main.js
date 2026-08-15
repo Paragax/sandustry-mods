@@ -12,6 +12,8 @@ const BEAM_COUNT = 6;
 const MAX_SPREAD_RADIANS = Math.PI / 12;
 const DAMAGE_UPGRADE_ID = "damage";
 const DAMAGE_PER_LEVEL = 1;
+const THICKNESS_UPGRADE_ID = "thickness";
+const THICKNESS_PER_LEVEL_PERCENT = 100;
 
 const nativeLaser = api.items.getDefinitionById("laser");
 if (!nativeLaser) {
@@ -43,6 +45,8 @@ const beamController = createBeamController(
   ITEM_ID,
   DAMAGE_UPGRADE_ID,
   DAMAGE_PER_LEVEL,
+  THICKNESS_UPGRADE_ID,
+  THICKNESS_PER_LEVEL_PERCENT,
 );
 
 const lastPrism = {
@@ -70,4 +74,6 @@ registerLastPrism({
   itemId: ITEM_ID,
   damageUpgradeId: DAMAGE_UPGRADE_ID,
   damagePerLevel: DAMAGE_PER_LEVEL,
+  thicknessUpgradeId: THICKNESS_UPGRADE_ID,
+  thicknessPerLevelPercent: THICKNESS_PER_LEVEL_PERCENT,
 });

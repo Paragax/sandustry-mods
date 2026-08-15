@@ -5,6 +5,8 @@ export function registerLastPrism({
   itemId,
   damageUpgradeId,
   damagePerLevel,
+  thicknessUpgradeId,
+  thicknessPerLevelPercent,
 }) {
   api.i18n.register("en", {
     "items|paragax.lastPrism|name": "Last Prism",
@@ -13,6 +15,9 @@ export function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|damage|name": "Prismatic Damage",
     "mods|paragax.lastPrism|upgrade|damage|description":
       "Increases terrain damage from each laser (+{amount} per level).",
+    "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
+    "mods|paragax.lastPrism|upgrade|thickness|description":
+      "Increases thickness of each beam (+{percent}% per level).",
   });
 
   api.items.register(lastPrism);
@@ -28,6 +33,18 @@ export function registerLastPrism({
       maxLevel: 3,
       // TODO: Replace temporary zero upgrade costs after balance testing.
       costs: [0, 0, 0],
+    },
+  });
+  api.upgrades.register({
+    itemId,
+    upgrade: {
+      id: thicknessUpgradeId,
+      nameKey: "mods|paragax.lastPrism|upgrade|thickness|name",
+      descriptionKey: "mods|paragax.lastPrism|upgrade|thickness|description",
+      descriptionParams: { percent: thicknessPerLevelPercent },
+      maxLevel: 4,
+      // TODO: Replace temporary zero upgrade costs after balance testing.
+      costs: [0, 0, 0, 0],
     },
   });
   api.events.on("game:started", () => {
