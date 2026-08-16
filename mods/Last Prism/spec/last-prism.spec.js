@@ -23,6 +23,7 @@ async function test() {
   let divergenceUpgradeLevel = 0;
   let iceMeltUpgradeLevel = 0;
   let terrainTypeAtHit = 23;
+  let raycastHits = true;
   let now = 0;
 
   const nativeLaser = {
@@ -69,7 +70,7 @@ async function test() {
     raycast: {
       castFromWorld: (x, y, angle) => {
         raycastAngles.push(angle);
-        return { x: 10, y: 20, distance: 100 };
+        return raycastHits ? { x: 10, y: 20, distance: 100 } : null;
       },
     },
     rendering: { getGridMetrics: () => ({ cellSize: 4 }) },
@@ -179,14 +180,15 @@ async function test() {
 
   now = 1000;
   state.session.action.state = { 2: true };
+  raycastHits = false;
+  const aimAngle = Math.atan2(50 - 12, 100 - 5);
   const fullChargeSoundsBefore = sounds.filter(
     (id) => id === "charge_up_2",
   ).length;
   registered[0].handleAction(state);
   assert.equal(lasers.length, 7);
-  assert.equal(excavations.length, 7);
-  assert.equal(excavations.at(-1)[4], 6);
-  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
+  assert.equal(excavations.length, 6);
+  assert.ok(Math.abs(raycastAngles.at(-1) - aimAngle) < 1e-12);
   assert.equal(lasers.at(-1)[4].width, 3);
   assert.equal(
     lights.filter((light) => light[2].dedupKey === "last-prism:full-charge")
@@ -198,12 +200,18 @@ async function test() {
     fullChargeSoundsBefore + 1,
   );
 
-  damageUpgradeLevel = 1;
+  raycastHits = true;
   registered[0].handleAction(state);
   assert.equal(lasers.length, 8);
+  assert.equal(excavations.length, 7);
+  assert.equal(excavations.at(-1)[4], 6);
+
+  damageUpgradeLevel = 1;
+  registered[0].handleAction(state);
+  assert.equal(lasers.length, 9);
   assert.equal(excavations.length, 8);
   assert.equal(excavations.at(-1)[4], 12);
-  assert.equal(raycastAngles.at(-1), raycastAngles.at(-2));
+  assert.ok(Math.abs(raycastAngles.at(-1) - aimAngle) < 1e-12);
   assert.equal(lasers.at(-1)[4].width, 3);
   assert.equal(
     lights.filter((light) => light[2].dedupKey === "last-prism:full-charge")

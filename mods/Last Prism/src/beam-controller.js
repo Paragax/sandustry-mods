@@ -70,24 +70,11 @@ export function createBeamController(
     const mouse = state.session.input.mouse.worldPosition;
     const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
     if (!alternate) {
-      const centralHit = api.raycast.castFromWorld(
-        originX,
-        originY,
-        aimAngle,
-        config.maxRangePx,
-      );
       const elapsedMs = chargeUpdatedAtMs === null
         ? 0
         : Math.max(now - chargeUpdatedAtMs, 0);
       chargeUpdatedAtMs = now;
-      if (!centralHit && chargeProgress < 1) {
-        chargeProgress = 0;
-      } else {
-        chargeProgress = Math.max(
-          0,
-          Math.min(1, chargeProgress + elapsedMs / config.windupMs),
-        );
-      }
+      chargeProgress = Math.min(1, chargeProgress + elapsedMs / config.windupMs);
     }
 
     const progress = alternate ? 0 : chargeProgress;
