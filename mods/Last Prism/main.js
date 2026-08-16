@@ -323,7 +323,7 @@ function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|damage|description": "Increases terrain damage from each laser (+{amount} per level).",
     "mods|paragax.lastPrism|upgrade|thickness|name": "Beam Thickness",
     "mods|paragax.lastPrism|upgrade|thickness|description": "Increases thickness of each beam (+{percent}% per level).",
-    "mods|paragax.lastPrism|upgrade|divergence|name": "Divergent Refraction",
+    "mods|paragax.lastPrism|upgrade|divergence|name": "Dark Spark",
     "mods|paragax.lastPrism|upgrade|divergence|description": "Unlocks six revolving, wide-spread beams on right-click.",
     "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
     "mods|paragax.lastPrism|upgrade|iceMelt|description": "Allows each beam to melt ice into water.",

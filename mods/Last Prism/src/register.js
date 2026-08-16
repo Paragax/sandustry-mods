@@ -23,7 +23,7 @@ export function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|thickness|description":
       "Increases thickness of each beam (+{percent}% per level).",
     "mods|paragax.lastPrism|upgrade|divergence|name":
-      "Divergent Refraction",
+      "Dark Spark",
     "mods|paragax.lastPrism|upgrade|divergence|description":
       "Unlocks six revolving, wide-spread beams on right-click.",
     "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
