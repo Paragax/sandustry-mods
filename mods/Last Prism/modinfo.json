@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "apiVersion": 1,
   "entry": "main.js",
-  "description": "Clones Sandustry's laser into six damaging, converging rainbow beams.",
+  "description": "Terraria's Last Prism item, but in Sandustry. This is basically a cheat mod. Check the upgrades tab for cool stuff.",
   "author": "Paragax",
   "dependencies": [],
   "loadOrder": 0

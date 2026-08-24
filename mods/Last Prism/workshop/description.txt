@@ -1,0 +1,29 @@
+[h1]Terraria's Last Prism reimagined as a Sandustry mining laser[/h1]
+
+[b]IMPORTANT[/b]
+This mod currently requires Sandustry's [b]mods[/b] Steam beta branch. Subscribe, restart the game, and enable the mod before loading a save that contains the Last Prism.
+
+This is intentionally an overpowered mod. It consumes no energy, and all upgrades are currently free.
+
+[h1]Controls[/h1]
+[list]
+[*]Hold left click to fire six rotating rainbow beams.
+[*]The beams converge while charging.
+[*]At full charge, they merge into one beam dealing their combined damage.
+[*]Unlock Dark Spark to fire six revolving spread beams with right click.
+[/list]
+
+[h1]Upgrades[/h1]
+[list]
+[*][b]Prismatic Damage[/b] - increases fully charged damage to 12, 18, and 24.
+[*][b]Beam Thickness[/b] - increases visual beam width by 100% per level.
+[*][b]Dark Spark[/b] - unlocks right-click spread fire.
+[*][b]Ice Melting[/b] - allows the beams to melt ice into water.
+[/list]
+
+Check the Upgrades tab after receiving the item.
+
+[h1]Save warning[/h1]
+Removing or disabling the mod while a save still contains the Last Prism may cause missing-item errors. Back up your save first.
+
+Inspired by Terraria's Last Prism. Not affiliated with Re-Logic.
