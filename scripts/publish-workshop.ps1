@@ -1,15 +1,11 @@
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory)]
-  [string]$Mod,
+  [Parameter(Mandatory, Position = 0)]
+  [string]$MetadataPath,
 
   [string]$SteamCmdPath = (Join-Path $env:LOCALAPPDATA "SteamCMD\steamcmd.exe"),
   [string]$SteamUser,
-  [string]$PreviewFile,
   [string]$ChangeNote,
-
-  [ValidateSet("Private", "FriendsOnly", "Public", "Unlisted")]
-  [string]$Visibility = "Private",
 
   [switch]$PrepareOnly
 )
@@ -19,12 +15,25 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $modsRoot = [IO.Path]::GetFullPath((Join-Path $repoRoot "mods"))
-$modRoot = [IO.Path]::GetFullPath((Join-Path $modsRoot $Mod))
+$resolvedMetadataPath = if ([IO.Path]::IsPathRooted($MetadataPath)) {
+  [IO.Path]::GetFullPath($MetadataPath)
+} else {
+  [IO.Path]::GetFullPath((Join-Path $repoRoot $MetadataPath))
+}
+if (-not (Test-Path -LiteralPath $resolvedMetadataPath -PathType Leaf)) {
+  throw "Missing Workshop metadata: $resolvedMetadataPath"
+}
+
+$metadataDirectory = Split-Path -Parent $resolvedMetadataPath
+if ((Split-Path -Leaf $metadataDirectory) -ne "workshop") {
+  throw "Workshop metadata must live under <mod-folder>\workshop"
+}
+$modRoot = [IO.Path]::GetFullPath((Split-Path -Parent $metadataDirectory))
 $modsPrefix = $modsRoot.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
 
 if (-not $modRoot.StartsWith($modsPrefix, [StringComparison]::OrdinalIgnoreCase) -or
     -not (Test-Path -LiteralPath $modRoot -PathType Container)) {
-  throw "Mod must be an existing folder under $modsRoot"
+  throw "Workshop metadata must belong to a mod under $modsRoot"
 }
 
 $manifestPath = Join-Path $modRoot "modinfo.json"
@@ -40,38 +49,41 @@ if ($safeId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
 $workerEntryProperty = $manifest.PSObject.Properties["workerEntry"]
 $workerEntry = if ($workerEntryProperty) { [string]$workerEntryProperty.Value } else { "" }
 
-$workshopTitle = [string]$manifest.name
-$workshopDescription = [string]$manifest.description
-$metadataPath = Join-Path $modRoot "workshop\metadata.json"
-if (Test-Path -LiteralPath $metadataPath -PathType Leaf) {
-  $metadata = Get-Content -Raw -LiteralPath $metadataPath | ConvertFrom-Json
-  if ($metadata.PSObject.Properties["title"]) {
-    $workshopTitle = [string]$metadata.title
-  }
-  if (-not $PreviewFile -and $metadata.PSObject.Properties["previewFile"]) {
-    $PreviewFile = [string]$metadata.previewFile
-  }
-  if ($metadata.PSObject.Properties["descriptionFile"]) {
-    $descriptionFile = [string]$metadata.descriptionFile
-    if ([IO.Path]::IsPathRooted($descriptionFile) -or $descriptionFile -match '(^|[\\/])\.\.([\\/]|$)') {
-      throw "Workshop description path must stay inside the mod: $descriptionFile"
-    }
-    $descriptionPath = Join-Path $modRoot $descriptionFile
-    if (-not (Test-Path -LiteralPath $descriptionPath -PathType Leaf)) {
-      throw "Missing Workshop description: $descriptionPath"
-    }
-    $workshopDescription = (Get-Content -Raw -LiteralPath $descriptionPath).Trim()
-  }
+$metadata = Get-Content -Raw -LiteralPath $resolvedMetadataPath | ConvertFrom-Json
+$workshopTitle = [string]$metadata.title
+if ([string]::IsNullOrWhiteSpace($workshopTitle)) {
+  throw "Workshop metadata requires title"
 }
-if (-not $PreviewFile) { $PreviewFile = "preview.png" }
 
-$previewPath = if ([IO.Path]::IsPathRooted($PreviewFile)) {
-  [IO.Path]::GetFullPath($PreviewFile)
-} else {
-  [IO.Path]::GetFullPath((Join-Path $modRoot $PreviewFile))
+function Resolve-WorkshopFile([string]$RelativePath, [string]$Label) {
+  if ([string]::IsNullOrWhiteSpace($RelativePath) -or [IO.Path]::IsPathRooted($RelativePath)) {
+    throw "Workshop metadata requires a relative $Label"
+  }
+  $resolvedPath = [IO.Path]::GetFullPath((Join-Path $metadataDirectory $RelativePath))
+  $metadataPrefix = $metadataDirectory.TrimEnd([IO.Path]::DirectorySeparatorChar) + [IO.Path]::DirectorySeparatorChar
+  if (-not $resolvedPath.StartsWith($metadataPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+    throw "Workshop $Label must stay inside $metadataDirectory"
+  }
+  if (-not (Test-Path -LiteralPath $resolvedPath -PathType Leaf)) {
+    throw "Missing Workshop $Label`: $resolvedPath"
+  }
+  return $resolvedPath
 }
-if (-not (Test-Path -LiteralPath $previewPath -PathType Leaf)) {
-  throw "Missing Workshop preview image: $previewPath"
+
+$descriptionPath = Resolve-WorkshopFile ([string]$metadata.descriptionFile) "description file"
+$previewPath = Resolve-WorkshopFile ([string]$metadata.previewFile) "preview file"
+$workshopDescription = (Get-Content -Raw -LiteralPath $descriptionPath).Trim()
+
+$visibilityValues = @{ Public = 0; FriendsOnly = 1; Private = 2; Unlisted = 3 }
+$visibility = [string]$metadata.visibility
+if (-not $visibilityValues.ContainsKey($visibility)) {
+  throw "Workshop metadata visibility must be Private, FriendsOnly, Public, or Unlisted"
+}
+$visibilityValue = $visibilityValues[$visibility]
+
+$publishedFileId = [string]$metadata.publishedFileId
+if ($publishedFileId -notmatch '^(0|[1-9][0-9]*)$') {
+  throw 'Workshop metadata publishedFileId must be "0" or a Steam Workshop item ID'
 }
 
 $packagePath = Join-Path $modRoot "package.json"
@@ -145,19 +157,11 @@ if (-not (Test-Path -LiteralPath $entryPath -PathType Leaf)) {
 }
 
 $vdfPath = Join-Path $workshopRoot "$safeId.vdf"
-$publishedFileId = "0"
-if (Test-Path -LiteralPath $vdfPath -PathType Leaf) {
-  $existingVdf = Get-Content -Raw -LiteralPath $vdfPath
-  if ($existingVdf -match '"publishedfileid"\s+"([0-9]+)"') {
-    $publishedFileId = $Matches[1]
-  }
-}
 
 function ConvertTo-VdfValue([object]$Value) {
   return ([string]$Value).Replace("\", "\\").Replace('"', '\"').Replace("`r", " ").Replace("`n", " ")
 }
 
-$visibilityValue = @{ Public = 0; FriendsOnly = 1; Private = 2; Unlisted = 3 }[$Visibility]
 if (-not $ChangeNote) { $ChangeNote = "Version $($manifest.version)" }
 
 $vdf = @"
@@ -197,5 +201,19 @@ $uploadedVdf = Get-Content -Raw -LiteralPath $vdfPath
 if ($uploadedVdf -notmatch '"publishedfileid"\s+"([1-9][0-9]*)"') {
   throw "SteamCMD did not write a Workshop item ID to $vdfPath"
 }
+$uploadedPublishedFileId = $Matches[1]
 
-Write-Host "Workshop item: https://steamcommunity.com/sharedfiles/filedetails/?id=$($Matches[1])"
+if ($publishedFileId -eq "0") {
+  $metadata.publishedFileId = $uploadedPublishedFileId
+  $updatedMetadata = ($metadata | ConvertTo-Json -Depth 10) + "`n"
+  [IO.File]::WriteAllText(
+    $resolvedMetadataPath,
+    $updatedMetadata,
+    [Text.UTF8Encoding]::new($false)
+  )
+  Write-Host "Saved Workshop item ID to: $resolvedMetadataPath"
+} elseif ($uploadedPublishedFileId -ne $publishedFileId) {
+  throw "SteamCMD returned Workshop item $uploadedPublishedFileId instead of $publishedFileId"
+}
+
+Write-Host "Workshop item: https://steamcommunity.com/sharedfiles/filedetails/?id=$uploadedPublishedFileId"

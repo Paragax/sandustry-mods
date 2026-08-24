@@ -1,5 +1,7 @@
 {
   "title": "Last Prism",
-  "descriptionFile": "workshop/description.txt",
-  "previewFile": "workshop/preview.png"
+  "publishedFileId": "3784243990",
+  "descriptionFile": "description.txt",
+  "previewFile": "preview.png",
+  "visibility": "Public"
 }
