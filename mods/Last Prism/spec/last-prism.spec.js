@@ -18,6 +18,7 @@ async function test() {
   const elementReplacements = [];
   const sounds = [];
   const inventory = [];
+  const spriteLoads = [];
   let damageUpgradeLevel = 0;
   let thicknessUpgradeLevel = 0;
   let divergenceUpgradeLevel = 0;
@@ -75,7 +76,9 @@ async function test() {
     },
     rendering: { getGridMetrics: () => ({ cellSize: 4 }) },
     sound: { play: (id) => sounds.push(id) },
-    sprites: { loadFromMod: async () => {} },
+    sprites: {
+      loadFromMod: async (...args) => spriteLoads.push(args),
+    },
     time: { getTimeMs: () => now },
     terrains: {
       getTypeFromId: (id) => ({ ice: 25 })[id],
@@ -117,6 +120,10 @@ async function test() {
   assert.equal(registered[0].config.energyCost, 0);
   assert.equal(registered[0].sprite.ui.imageName, "paragax.last-prism.sprite");
   assert.deepEqual(registered[0].sprite.ui.size, { width: 26, height: 30 });
+  assert.deepEqual(spriteLoads, [[
+    "paragax.last-prism.sprite",
+    "assets/last-prism.png",
+  ]]);
   assert.equal(nativeLaser.config.energyCost, 60);
   assert.equal(registeredUpgrades.length, 4);
   const damageUpgrade = registeredUpgrades.find(
