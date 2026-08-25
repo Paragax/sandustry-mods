@@ -159,7 +159,7 @@ if (-not (Test-Path -LiteralPath $entryPath -PathType Leaf)) {
 $vdfPath = Join-Path $workshopRoot "$safeId.vdf"
 
 function ConvertTo-VdfValue([object]$Value) {
-  return ([string]$Value).Replace("\", "\\").Replace('"', '\"').Replace("`r`n", "\n").Replace("`r", "\n").Replace("`n", "\n")
+  return ([string]$Value).Replace("\", "\\").Replace('"', '\"')
 }
 
 if (-not $ChangeNote) { $ChangeNote = "Version $($manifest.version)" }
