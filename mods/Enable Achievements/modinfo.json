@@ -1,0 +1,12 @@
+{
+  "manifestVersion": 1,
+  "id": "paragax.enable-achievements",
+  "name": "Enable Achievements",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "entry": "main.js",
+  "description": "Enables native Steam achievement checks while playing with Sandustry mods.",
+  "author": "Paragax",
+  "dependencies": [],
+  "loadOrder": 0
+}
