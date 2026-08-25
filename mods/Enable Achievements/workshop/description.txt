@@ -1,10 +1,10 @@
-[h1]Enable Achievements[/h1]
+[b][u]Enable Achievements[/u][/b]
 
 Enables Sandustry's normal Steam achievement checks while playing with mods.
 
 This mod does not unlock achievements directly. You must still meet each
 achievement's normal in-game requirements.
 
-[h1]Compatibility[/h1]
+[b][u]Compatibility[/u][/b]
 This mod targets Sandustry 0.5.2 on the Steam mods branch. Game updates may
 require a compatibility update.
