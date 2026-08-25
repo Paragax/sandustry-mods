@@ -29,7 +29,7 @@ export function registerLastPrism({
     "mods|paragax.lastPrism|upgrade|iceMelt|name": "Ice Melting",
     "mods|paragax.lastPrism|upgrade|iceMelt|description":
       "Allows each beam to melt ice into water.",
-    "mods|paragax.lastPrism|input|diverge|name": "Divergent Fire",
+    "mods|paragax.lastPrism|input|diverge|name": "Dark Spark",
   });
 
   api.items.register(lastPrism);
