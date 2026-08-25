@@ -1,0 +1,13 @@
+[h1]Heading[/h1]
+
+[b]Bold text[/b]
+[i]Italic text[/i]
+[u]Underlined text[/u]
+
+[h1]Features[/h1]
+[list]
+[*]First feature
+[*]Second feature
+[/list]
+
+[url=https://example.com]Link text[/url]

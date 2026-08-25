@@ -149,3 +149,6 @@ map/ - Blueprints and configs for custom maps.
 Repository publishing files under a mod-local `workshop/` directory are not
 part of Sandustry's documented runtime format. See
 [`WORKSHOP_PUBLISHING.md`](WORKSHOP_PUBLISHING.md).
+
+For the repository's standard bundled source, test, and Workshop layout, clone
+[`examples/mod-template/`](../examples/mod-template/) into `mods/<mod-name>/`.

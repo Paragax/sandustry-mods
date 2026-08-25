@@ -1,0 +1,12 @@
+{
+  "manifestVersion": 1,
+  "id": "paragax.mod-id",
+  "name": "Mod Name",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "entry": "main.js",
+  "description": "Replace with a short description of the mod.",
+  "author": "Paragax",
+  "dependencies": [],
+  "loadOrder": 0
+}
