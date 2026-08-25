@@ -49,6 +49,17 @@ async function test() {
       replaceAtCellWhenIdle: (...args) => elementReplacements.push(args),
     },
     events: { on: (id, handler) => { eventHandlers[id] = handler; } },
+    grid: {
+      forEachCellInCircle: (centerX, centerY, radius, callback) => {
+        for (let x = Math.ceil(centerX - radius); x <= centerX + radius; x += 1) {
+          for (let y = Math.ceil(centerY - radius); y <= centerY + radius; y += 1) {
+            if ((x - centerX) ** 2 + (y - centerY) ** 2 <= radius ** 2) {
+              callback(x, y);
+            }
+          }
+        }
+      },
+    },
     i18n: {
       register: (locale, entries) => Object.assign(translations, entries),
     },
@@ -252,15 +263,16 @@ async function test() {
   iceMeltUpgradeLevel = 1;
   registered[0].handleAction(state);
   assert.equal(excavations.length, excavationsBeforeIce + 1);
-  assert.equal(elementReplacements.length, 1);
+  assert.equal(elementReplacements.length, 9);
   assert.ok(elementReplacements.every(
-    ([x, y, elementType]) => x === 10 && y === 20 && elementType === 4,
+    ([x, y, elementType]) =>
+      x >= 9 && x <= 11 && y >= 19 && y <= 21 && elementType === 4,
   ));
 
   terrainTypeAtHit = 23;
   registered[0].handleAction(state);
   assert.equal(excavations.length, excavationsBeforeIce + 2);
-  assert.equal(elementReplacements.length, 1);
+  assert.equal(elementReplacements.length, 9);
 
   const lasersBeforeUnlock = lasers.length;
   divergenceBinding.definition.handlers.down();

@@ -132,6 +132,19 @@ export function createBeamController(
     return frame.aimAngle + lane * frame.spread + wobble;
   }
 
+  function meltIceAtImpact(hit, frame) {
+    const radius = frame.width / (frame.cellSize * 2);
+    api.grid.forEachCellInCircle(hit.x, hit.y, radius, (cellX, cellY) => {
+      if (api.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
+        api.elements.replaceAtCellWhenIdle(
+          cellX,
+          cellY,
+          WATER_ELEMENT_TYPE,
+        );
+      }
+    });
+  }
+
   function createImpact(index, hit, endX, endY, angle, color, frame) {
     const outVelocity = {
       x: 300 * Math.cos(angle),
@@ -141,11 +154,7 @@ export function createBeamController(
       frame.meltsIce &&
       api.terrains.getTypeAtCell(hit.x, hit.y) === ICE_TERRAIN_TYPE
     ) {
-      api.elements.replaceAtCellWhenIdle(
-        hit.x,
-        hit.y,
-        WATER_ELEMENT_TYPE,
-      );
+      meltIceAtImpact(hit, frame);
     } else {
       api.patterns.excavateAtCell(
         hit.x,

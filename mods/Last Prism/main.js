@@ -120,17 +120,25 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     const wobble = Math.sin(frame.spin + index * Math.PI * 2 / config2.beamCount) * frame.spread * 0.25;
     return frame.aimAngle + lane * frame.spread + wobble;
   }
+  function meltIceAtImpact(hit, frame) {
+    const radius = frame.width / (frame.cellSize * 2);
+    api2.grid.forEachCellInCircle(hit.x, hit.y, radius, (cellX, cellY) => {
+      if (api2.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
+        api2.elements.replaceAtCellWhenIdle(
+          cellX,
+          cellY,
+          WATER_ELEMENT_TYPE
+        );
+      }
+    });
+  }
   function createImpact(index, hit, endX, endY, angle, color, frame) {
     const outVelocity = {
       x: 300 * Math.cos(angle),
       y: 300 * -Math.sin(angle)
     };
     if (frame.meltsIce && api2.terrains.getTypeAtCell(hit.x, hit.y) === ICE_TERRAIN_TYPE) {
-      api2.elements.replaceAtCellWhenIdle(
-        hit.x,
-        hit.y,
-        WATER_ELEMENT_TYPE
-      );
+      meltIceAtImpact(hit, frame);
     } else {
       api2.patterns.excavateAtCell(
         hit.x,
