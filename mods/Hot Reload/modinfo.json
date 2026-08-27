@@ -1,0 +1,12 @@
+{
+  "manifestVersion": 1,
+  "id": "paragax.hot-reload",
+  "name": "Hot Reload",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "entry": "main.js",
+  "description": "Reloads a local Sandustry mod after its built JavaScript changes.",
+  "author": "Paragax",
+  "dependencies": [],
+  "loadOrder": -1000
+}

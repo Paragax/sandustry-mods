@@ -1,0 +1,10 @@
+[
+  {
+    "id": "inject-local-development-source",
+    "file": "js/bundle.js",
+    "find": "const t=e.data;if(!t||!Array.isArray(t.mods))return null;",
+    "operation": "replace",
+    "code": "const t=e.data;if(t&&Array.isArray(t.mods)){const e=[];for(const n of t.mods){if(n?.manifest?.id===\"paragax.hot-reload\"||!n?.workshop?.discoveredVia?.includes(\"local\")||!n.rootUrl||\"string\"!=typeof n.manifest.entry)continue;try{const t=new URL(n.manifest.entry,n.rootUrl),a=await fetch(t,{cache:\"no-store\"});if(!a.ok)continue;const r=await a.text();let o=null,s=null;if(n.manifest.workerEntry){o=new URL(n.manifest.workerEntry,n.rootUrl);const e=await fetch(o,{cache:\"no-store\"});if(!e.ok)continue;s=await e.text()}n.entrySource=r,n.workerSource=s,e.push({modId:n.manifest.id,modName:n.manifest.name||n.manifest.id,entryUrl:t.href,workerUrl:o?.href||null,entrySource:r,workerSource:s})}catch(e){}}globalThis.__sandustryHotReloadTargets=e}if(!t||!Array.isArray(t.mods))return null;",
+    "expectedMatches": 1
+  }
+]

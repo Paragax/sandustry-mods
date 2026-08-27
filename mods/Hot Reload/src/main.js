@@ -1,0 +1,118 @@
+const api = sandkit.api;
+const engine = sandkit.engine;
+const gameScene = 4; // Undocumented Sandustry 0.5.2 scene value.
+
+let refreshing = false;
+let polling = false;
+let connected = false;
+
+function reload(change) {
+  if (refreshing) return;
+  refreshing = true;
+
+  const state = engine.state;
+  const game = engine.api?.game;
+  if (state?.store?.scene?.active !== gameScene) {
+    location.reload();
+    return;
+  }
+
+  if (!game?.save || !game?.load || !state.store.meta?.worldId) {
+    refreshing = false;
+    api.ui.toast("Hot Reload cannot safely save on this Sandustry version.");
+    return;
+  }
+
+  if (state.session.saving) {
+    refreshing = false;
+    setTimeout(() => reload(change), 250);
+    return;
+  }
+
+  const saveId = `${state.store.meta.worldId}-hot-reload`;
+
+  // Undocumented: the raw game API expects state and exposes the active save
+  // operation. Sandustry 0.5.2 invokes these callbacks after worker sync.
+  try {
+    game.save(state, "Hot Reload", saveId);
+  } catch {
+    refreshing = false;
+    api.ui.toast("Hot Reload could not start a safe save.");
+    return;
+  }
+  const saving = state.session.saving;
+  if (!saving || saving.id !== saveId) {
+    refreshing = false;
+    api.ui.toast("Hot Reload could not start a safe save.");
+    return;
+  }
+
+  api.ui.toast(`Hot Reloading ${change.modName || change.modId}...`);
+  saving.onComplete = () => game.load(state, saveId);
+  saving.onError = () => {
+    refreshing = false;
+    api.ui.toast("Hot Reload save failed; the game was not reloaded.");
+  };
+}
+
+async function readTarget(target) {
+  const entryResponse = await fetch(target.entryUrl, {
+    cache: "no-store",
+  });
+  if (!entryResponse.ok) throw new Error("Local mod entry is unavailable");
+
+  let workerSource = null;
+  if (target.workerUrl) {
+    const workerResponse = await fetch(target.workerUrl, {
+      cache: "no-store",
+    });
+    if (!workerResponse.ok) {
+      throw new Error("Local worker entry is unavailable");
+    }
+    workerSource = await workerResponse.text();
+  }
+
+  return {
+    ...target,
+    entrySource: await entryResponse.text(),
+    workerSource,
+  };
+}
+
+async function poll() {
+  try {
+    if (refreshing) return;
+    const targets = globalThis.__sandustryHotReloadTargets;
+    if (!Array.isArray(targets) || targets.length === 0) return;
+
+    for (const target of targets) {
+      const current = await readTarget(target);
+      if (
+        current.entrySource !== target.entrySource ||
+        current.workerSource !== target.workerSource
+      ) {
+        reload(current);
+        return;
+      }
+    }
+
+    if (!connected) {
+      connected = true;
+      console.info(`[Hot Reload] watching ${targets.length} local mod(s)`);
+      api.ui.toast(`Hot Reload watching ${targets.length} local mod(s)`);
+    }
+  } catch {
+    connected = false;
+  } finally {
+    setTimeout(poll, 1000);
+  }
+}
+
+function connect() {
+  if (polling) return;
+  polling = true;
+  poll();
+}
+
+api.events.on("mods:initialized", connect);
+api.schedule.nextTick(connect);
