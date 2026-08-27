@@ -1,0 +1,29 @@
+[b][u]Hot Reload for Sandustry mod developers[/u][/b]
+Reload local mods after code changes without closing and relaunching Sandustry.
+
+[b][u]How it works[/u][/b]
+Once per second, Hot Reload checks each local mod's generated [code]main.js[/code] and optional [code]worker.js[/code] entrypoints. When either file changes, it saves the active world to a dedicated Hot Reload save, then reloads the world with the updated mod code.
+
+[b][u]Usage[/u][/b]
+[list]
+[*]Subscribe to and enable Hot Reload.
+[*]Restart Sandustry once so Hot Reload's bundle patch is applied.
+[*]Install the mod you are developing in Sandustry's local mods directory.
+[*]Edit your source, then run your normal build or watch command to update [code]main.js[/code] or [code]worker.js[/code].
+[*]Hot Reload detects the entrypoint change, saves, and reloads the active world automatically.
+[/list]
+
+No helper process, development server, or per-mod configuration is required. Hot Reload watches built entrypoints; it does not compile source files for you.
+
+[b][u]Supported entrypoints[/u][/b]
+[code]main.js[/code] is Sandustry's documented main-thread mod entrypoint. [code]worker.js[/code] is the optional documented entrypoint for manager and simulation worker threads.
+
+[b][u]Limitations[/u][/b]
+[list]
+[*]Only local mod installations are watched. Steam Workshop copies are ignored.
+[*]Adding a new mod still requires a normal Sandustry restart.
+[*]Changes outside [code]main.js[/code] and [code]worker.js[/code], including assets, maps, manifests, patches, and configuration, still require a normal Sandustry restart.
+[/list]
+
+[b][u]Compatibility[/u][/b]
+Targets Sandustry 0.5.2 on Steam's mods branch. This developer tool relies on an exact-match bundle patch and undocumented save/load internals, so game updates may require a compatibility update. Back up development saves.
