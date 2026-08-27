@@ -7,7 +7,8 @@ Copy this directory to `mods/<Mod Name>/`, then replace every occurrence of:
 - `Mod Name` with the player-facing name.
 - Placeholder descriptions with real copy.
 
-Add `workshop/preview.png` before preparing or publishing the Workshop item.
+Replace the placeholder `workshop/preview.png` before preparing or publishing
+the Workshop item.
 Keep `publishedFileId` set to `"0"` until the first successful upload.
 Before committing the cloned mod, remove all template comments, placeholder
 values, unused example code, and this README.
