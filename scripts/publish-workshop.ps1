@@ -54,6 +54,22 @@ $workshopTitle = [string]$metadata.title
 if ([string]::IsNullOrWhiteSpace($workshopTitle)) {
   throw "Workshop metadata requires title"
 }
+$gameVersionProperty = $metadata.PSObject.Properties["gameVersion"]
+if (-not $gameVersionProperty) {
+  throw 'Workshop metadata requires gameVersion'
+}
+$gameVersion = $gameVersionProperty.Value
+$minimumProperty = $gameVersion.PSObject.Properties["minimum"]
+$maximumProperty = $gameVersion.PSObject.Properties["maximum"]
+$minimumGameVersion = if ($minimumProperty) { [string]$minimumProperty.Value } else { "" }
+$maximumGameVersion = if ($maximumProperty) { [string]$maximumProperty.Value } else { "" }
+if ((-not $minimumGameVersion -and -not $maximumGameVersion) -or
+    ($minimumGameVersion -and $minimumGameVersion -notmatch '^\d+\.\d+\.\d+$') -or
+    ($maximumGameVersion -and $maximumGameVersion -notmatch '^\d+\.\d+\.\d+$') -or
+    ($minimumGameVersion -and $maximumGameVersion -and
+      [version]$minimumGameVersion -gt [version]$maximumGameVersion)) {
+  throw 'Workshop metadata gameVersion requires a valid minimum and/or maximum in x.y.z format'
+}
 
 function Resolve-WorkshopFile([string]$RelativePath, [string]$Label) {
   if ([string]::IsNullOrWhiteSpace($RelativePath) -or [IO.Path]::IsPathRooted($RelativePath)) {
@@ -183,6 +199,9 @@ New-Item -ItemType Directory -Path $workshopRoot -Force | Out-Null
 
 Write-Host "Staged: $stageRoot"
 Write-Host "VDF:    $vdfPath"
+if ($minimumGameVersion) { Write-Host "Minimum Sandustry: $minimumGameVersion" }
+if ($maximumGameVersion) { Write-Host "Maximum Sandustry: $maximumGameVersion" }
+Write-Host "Set the same range manually under Workshop Change Notes -> Link to Game Version."
 if ($PrepareOnly) { return }
 
 $steamCmd = Get-Command $SteamCmdPath -ErrorAction SilentlyContinue

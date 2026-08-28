@@ -23,9 +23,20 @@ This repository still contains the pre-0.5.5 SteamCMD publisher and
 `<mod>/workshop/metadata.json` convention. Those are repository tooling, not
 official Sandkit 0.5.5 APIs or manifest fields.
 
-Do not add `gameVersion` to repository Workshop metadata. SteamCMD cannot apply
-the Workshop version link, so such a field has no publishing effect. Keep the
-runtime compatibility range in `modinfo.json`, where Sandustry enforces it.
+Repository metadata records the intended Workshop version link using the same
+minimum/maximum convention as the 0.5.5 manifest:
+
+```json
+{
+  "gameVersion": {
+    "maximum": "0.5.2"
+  }
+}
+```
+
+The publisher validates and reports this range as a release checklist, but
+SteamCMD does not apply it. Keep the runtime compatibility range in
+`modinfo.json`, where Sandustry enforces it.
 
 Set Workshop compatibility manually under
 `Change Notes -> Link to Game Version`. The SteamCMD workflow was successfully

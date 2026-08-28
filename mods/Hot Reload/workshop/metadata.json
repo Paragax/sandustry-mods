@@ -1,6 +1,9 @@
 {
   "title": "Hot Reload",
   "publishedFileId": "3790726438",
+  "gameVersion": {
+    "minimum": "0.5.5"
+  },
   "descriptionFile": "description.txt",
   "previewFile": "preview.png",
   "visibility": "Public"
