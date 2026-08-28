@@ -1,9 +1,6 @@
 {
   "title": "Enable Achievements",
   "publishedFileId": "3789619665",
-  "gameVersion": {
-    "maximum": "0.5.2"
-  },
   "descriptionFile": "description.txt",
   "previewFile": "preview.png",
   "visibility": "Public"

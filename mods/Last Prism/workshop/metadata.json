@@ -1,9 +1,6 @@
 {
   "title": "Last Prism",
   "publishedFileId": "3784243990",
-  "gameVersion": {
-    "minimum": "0.5.5"
-  },
   "descriptionFile": "description.txt",
   "previewFile": "preview.png",
   "visibility": "Public"
