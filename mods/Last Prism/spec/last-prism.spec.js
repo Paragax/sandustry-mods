@@ -30,23 +30,28 @@ async function test() {
   const nativeLaser = {
     id: "laser",
     sprite: { id: "laser", ui: { imageName: "laser_icon" } },
-    config: { energyCost: 60, normalPatternSize: 7, reducedPatternSize: 0 },
+    config: {
+      energyCost: 60,
+      chargeMs: 1000,
+      maxRangeCells: 250,
+      patternSize: 7,
+      excavationPower: 1,
+      debrisEjectionSpeedPixelsPerSecond: 300,
+    },
   };
   const noop = () => {};
   const api = {
     action: { getActive: () => ({ id: "paragax.last-prism" }) },
-    authorization: { canUseTool: () => true },
+    authorization: { canUseToolAtCell: () => true },
     effects: {
       createLaserAtWorld: (...args) => {
         lasers.push(args);
         return { destroy: noop };
       },
-      createLightAtWorld: (...args) => lights.push(args),
       createParticlesAtWorld: noop,
     },
     elements: {
-      getTypeFromId: (id) => ({ water: 4 })[id],
-      replaceAtCellWhenIdle: (...args) => elementReplacements.push(args),
+      getTypeById: (id) => ({ water: 4 })[id],
     },
     events: { on: (id, handler) => { eventHandlers[id] = handler; } },
     grid: {
@@ -64,10 +69,15 @@ async function test() {
       register: (locale, entries) => Object.assign(translations, entries),
     },
     input: {
+      getMousePositionAtCell: () => ({ x: 25, y: 12 }),
+      getMousePositionAtWorld: () => ({ x: 100, y: 50 }),
       registerBinding: (id, defaultKeys, definition) => {
         inputBindings[id] = { defaultKeys, definition };
         return id;
       },
+    },
+    lights: {
+      temporary: { createAtWorld: (...args) => lights.push(args) },
     },
     items: {
       getDefinitionById: () => nativeLaser,
@@ -77,22 +87,33 @@ async function test() {
       createCircle: (size) => ({ size }),
       excavateAtCell: (...args) => excavations.push(args),
     },
-    player: { inventory: { addFromId: (id) => inventory.push({ id }) } },
-    random: { float: (min, max) => (min + max) / 2 },
-    raycast: {
-      castFromWorld: (x, y, angle) => {
-        raycastAngles.push(angle);
-        return raycastHits ? { x: 10, y: 20, distance: 100 } : null;
+    player: {
+      getPositionAtWorld: () => ({ x: 0, y: 0 }),
+      inventory: {
+        hasById: (id) => inventory.some((item) => item.id === id),
+        addById: (id) => inventory.push({ id }),
       },
     },
-    rendering: { getGridMetrics: () => ({ cellSize: 4 }) },
+    random: { float: (min, max) => (min + max) / 2 },
+    raycast: {
+      castAtWorld: (x, y, angle) => {
+        raycastAngles.push(angle);
+        return raycastHits
+          ? { cellX: 10, cellY: 20, distanceWorldPixels: 100 }
+          : null;
+      },
+    },
+    rendering: {
+      getDrawPositionAtWorld: (x, y) => ({ x: x - 20, y: y - 10 }),
+      getGridMetrics: () => ({ cellSize: 4 }),
+    },
     sound: { play: (id) => sounds.push(id) },
     sprites: {
       loadFromMod: async (...args) => spriteLoads.push(args),
     },
-    time: { getTimeMs: () => now },
+    time: { getElapsedMs: () => now },
     terrains: {
-      getTypeFromId: (id) => ({ ice: 25 })[id],
+      getTypeById: (id) => ({ ice: 25 })[id],
       getTypeAtCell: () => terrainTypeAtHit,
     },
     ui: { toast: noop },
@@ -106,19 +127,18 @@ async function test() {
       register: (definition) => registeredUpgrades.push(definition),
     },
   };
+  api.grid.mutate = (callback) => callback({
+    elements: {
+      replaceAtCell: (...args) => elementReplacements.push(args),
+    },
+  });
   const state = {
     session: {
       action: { state: { 1: true, 2: true } },
-      camera: { x: 0, y: 0 },
-      input: { mouse: { worldPosition: { x: 100, y: 50 } } },
-    },
-    store: {
-      player: { x: 0, y: 0, width: 10, height: 20, inventory },
     },
   };
   const sandkit = {
     api,
-    engine: { state },
     enums: { ActionState: { Start: 1, Active: 2, End: 3 } },
   };
 
@@ -129,6 +149,9 @@ async function test() {
 
   assert.equal(registered.length, 1);
   assert.equal(registered[0].config.energyCost, 0);
+  assert.equal(registered[0].config.chargeMs, 1000);
+  assert.equal(registered[0].config.maxRangeCells, 250);
+  assert.equal(registered[0].config.patternSize, 7);
   assert.equal(registered[0].sprite.ui.imageName, "paragax.last-prism.sprite");
   assert.deepEqual(registered[0].sprite.ui.size, { width: 26, height: 30 });
   assert.deepEqual(spriteLoads, [[
@@ -190,6 +213,7 @@ async function test() {
 
   registered[0].handleAction(state);
   assert.equal(lasers.length, 6);
+  assert.deepEqual(lasers[0].slice(0, 2), [-15, 2]);
   assert.equal(excavations.length, 6);
   assert.ok(excavations.every((excavation) => excavation[4] === 1));
   assert.ok(new Set(raycastAngles.slice(1)).size > 1);

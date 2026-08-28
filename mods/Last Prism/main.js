@@ -21,9 +21,9 @@ function hexToLightColor(color) {
 // src/beam-controller.js
 function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent, iceMeltUpgradeId) {
   const COLOR_CYCLE_MS = 1800;
-  const BASE_BEAM_DAMAGE = 1;
-  const ICE_TERRAIN_TYPE = api2.terrains.getTypeFromId("ice");
-  const WATER_ELEMENT_TYPE = api2.elements.getTypeFromId("water");
+  const NATIVE_ORIGIN_OFFSET_CELLS = { x: 1.25, y: 3 };
+  const ICE_TERRAIN_TYPE = api2.terrains.getTypeById("ice");
+  const WATER_ELEMENT_TYPE = api2.elements.getTypeById("water");
   let beamGraphics = [];
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
@@ -66,23 +66,24 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       fadeIn: 1
     });
   }
-  function getBeamFrame(state, now, alternate) {
-    const player = state.store.player;
-    const originX = player.x + player.width / 2;
-    const originY = player.y + player.height / 2 + 2;
-    const mouse = state.session.input.mouse.worldPosition;
+  function getBeamFrame(now, alternate) {
+    const player = api2.player.getPositionAtWorld();
+    const cellSize = api2.rendering.getGridMetrics().cellSize;
+    const originX = player.x + NATIVE_ORIGIN_OFFSET_CELLS.x * cellSize;
+    const originY = player.y + NATIVE_ORIGIN_OFFSET_CELLS.y * cellSize;
+    const mouse = api2.input.getMousePositionAtWorld();
     const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
     if (!alternate) {
       const elapsedMs = chargeUpdatedAtMs === null ? 0 : Math.max(now - chargeUpdatedAtMs, 0);
       chargeUpdatedAtMs = now;
-      chargeProgress = Math.min(1, chargeProgress + elapsedMs / config2.windupMs);
+      chargeProgress = Math.min(1, chargeProgress + elapsedMs / config2.chargeMs);
     }
     const progress = alternate ? 0 : chargeProgress;
     const focused = !alternate && progress >= 1;
     const smoothProgress = progress * progress * (3 - 2 * progress);
     const spread = config2.maxSpreadRadians * (1 - smoothProgress);
     const animationStart = alternate ? alternateAnimationStartMs : animationStartMs;
-    const spin = (now - animationStart) / config2.windupMs * Math.PI * 4;
+    const spin = (now - animationStart) / config2.chargeMs * Math.PI * 4;
     const baseWidth = 1 + 2 * progress;
     const thicknessLevel = api2.upgrades.getLevelById(
       itemId,
@@ -90,10 +91,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     );
     const width = baseWidth * (1 + thicknessPerLevelPercent / 100 * thicknessLevel);
     const brightness = alternate ? 1 : progress < 1 ? 0.1 + 0.4 * progress : 1;
-    const cellSize = api2.rendering.getGridMetrics().cellSize;
-    const camera = state.session.camera;
     const damageLevel = api2.upgrades.getLevelById(itemId, damageUpgradeId);
-    const perBeamDamage = BASE_BEAM_DAMAGE + damagePerLevel * damageLevel;
+    const perBeamDamage = config2.excavationPower + damagePerLevel * damageLevel;
     const damage = perBeamDamage * (focused ? config2.beamCount : 1);
     const meltsIce = api2.upgrades.getLevelById(itemId, iceMeltUpgradeId) > 0;
     return {
@@ -106,7 +105,7 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       width,
       brightness,
       cellSize,
-      camera,
+      maxRangeWorldPixels: config2.maxRangeCells * cellSize,
       damage,
       focused,
       meltsIce
@@ -122,14 +121,17 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   }
   function meltIceAtImpact(hit, frame) {
     const radius = frame.width / (frame.cellSize * 2);
-    api2.grid.forEachCellInCircle(hit.x, hit.y, radius, (cellX, cellY) => {
-      if (api2.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
-        api2.elements.replaceAtCellWhenIdle(
-          cellX,
-          cellY,
-          WATER_ELEMENT_TYPE
-        );
-      }
+    api2.grid.mutate((writer) => {
+      api2.grid.forEachCellInCircle(
+        hit.cellX,
+        hit.cellY,
+        radius,
+        (cellX, cellY) => {
+          if (api2.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
+            writer.elements.replaceAtCell(cellX, cellY, WATER_ELEMENT_TYPE);
+          }
+        }
+      );
     });
   }
   function createImpact(index, hit, endX, endY, angle, color, frame) {
@@ -137,21 +139,21 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       x: 300 * Math.cos(angle),
       y: 300 * -Math.sin(angle)
     };
-    if (frame.meltsIce && api2.terrains.getTypeAtCell(hit.x, hit.y) === ICE_TERRAIN_TYPE) {
+    if (frame.meltsIce && api2.terrains.getTypeAtCell(hit.cellX, hit.cellY) === ICE_TERRAIN_TYPE) {
       meltIceAtImpact(hit, frame);
     } else {
       api2.patterns.excavateAtCell(
-        hit.x,
-        hit.y,
+        hit.cellX,
+        hit.cellY,
         excavationPattern2,
         outVelocity,
         frame.damage,
         { fromDrill: true }
       );
     }
-    api2.effects.createLightAtWorld(endX, endY, {
+    api2.lights.temporary.createAtWorld(endX, endY, {
       brightness: frame.brightness,
-      duration: 300,
+      durationMs: 300,
       size: 300,
       color: hexToLightColor(color),
       dedupKey: `last-prism:impact:${index}`
@@ -169,23 +171,28 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   }
   function createBeam(index, frame) {
     const angle = getBeamAngle(index, frame);
-    const hit = api2.raycast.castFromWorld(
+    const hit = api2.raycast.castAtWorld(
       frame.originX,
       frame.originY,
       angle,
-      config2.maxRangePx
+      frame.maxRangeWorldPixels
     );
-    const endX = hit ? hit.x * frame.cellSize : frame.originX + Math.cos(angle) * config2.maxRangePx;
-    const endY = hit ? hit.y * frame.cellSize : frame.originY + Math.sin(angle) * config2.maxRangePx;
+    const endX = hit ? frame.originX + Math.cos(angle) * hit.distanceWorldPixels : frame.originX + Math.cos(angle) * frame.maxRangeWorldPixels;
+    const endY = hit ? frame.originY + Math.sin(angle) * hit.distanceWorldPixels : frame.originY + Math.sin(angle) * frame.maxRangeWorldPixels;
     const color = hueToHex(
       frame.now * 360 / COLOR_CYCLE_MS + index * 360 / config2.beamCount
     );
+    const startDraw = api2.rendering.getDrawPositionAtWorld(
+      frame.originX,
+      frame.originY
+    );
+    const endDraw = api2.rendering.getDrawPositionAtWorld(endX, endY);
     beamGraphics.push(
       api2.effects.createLaserAtWorld(
-        frame.originX - frame.camera.x,
-        frame.originY - frame.camera.y,
-        endX - frame.camera.x,
-        endY - frame.camera.y,
+        startDraw.x,
+        startDraw.y,
+        endDraw.x,
+        endDraw.y,
         { width: frame.width, brightness: frame.brightness, color, glow: true }
       )
     );
@@ -195,8 +202,8 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     createImpact(index, hit, endX, endY, angle, color, frame);
     return true;
   }
-  function renderBeams(state, now, alternate) {
-    const frame = getBeamFrame(state, now, alternate);
+  function renderBeams(now, alternate) {
+    const frame = getBeamFrame(now, alternate);
     const beamCount = frame.focused ? 1 : config2.beamCount;
     let hitAnything = false;
     for (let index = 0; index < beamCount; index += 1) {
@@ -204,9 +211,9 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
     }
     if (frame.focused && !fullChargeFeedbackPlayed) {
       fullChargeFeedbackPlayed = true;
-      api2.effects.createLightAtWorld(frame.originX, frame.originY, {
+      api2.lights.temporary.createAtWorld(frame.originX, frame.originY, {
         brightness: 2,
-        duration: 250,
+        durationMs: 250,
         size: 450,
         color: [1, 1, 1, 1],
         dedupKey: "last-prism:full-charge"
@@ -218,9 +225,9 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
         maxInstances: 1
       });
     }
-    api2.effects.createLightAtWorld(frame.originX, frame.originY, {
+    api2.lights.temporary.createAtWorld(frame.originX, frame.originY, {
       brightness: 0.8 * frame.brightness,
-      duration: 1,
+      durationMs: 1,
       size: 300,
       color: [1, 1, 1, 1],
       dedupKey: "last-prism:origin"
@@ -243,36 +250,38 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
       resetCharge();
       return;
     }
-    if (!api2.authorization.canUseTool(state.store.player)) {
+    const target = api2.input.getMousePositionAtCell();
+    if (!api2.authorization.canUseToolAtCell(target.x, target.y)) {
       if (actionState[ActionState2.Start]) {
         api2.ui.toast("Last Prism cannot be used here");
       }
       resetCharge();
       return;
     }
-    const now = api2.time.getTimeMs();
+    const now = api2.time.getElapsedMs();
     if (actionState[ActionState2.Start] || firingMode !== "converge") {
       startCharge(now, "converge");
     }
-    renderBeams(state, now, false);
+    renderBeams(now, false);
   }
-  function handleAlternateAction(state) {
+  function handleAlternateAction() {
     const starting = !alternateHeld;
     alternateHeld = true;
     destroyBeams();
-    if (!api2.authorization.canUseTool(state.store.player)) {
+    const target = api2.input.getMousePositionAtCell();
+    if (!api2.authorization.canUseToolAtCell(target.x, target.y)) {
       if (starting) {
         api2.ui.toast("Last Prism cannot be used here");
       }
       resetCharge();
       return;
     }
-    const now = api2.time.getTimeMs();
+    const now = api2.time.getElapsedMs();
     if (starting) {
       resetCharge();
       alternateAnimationStartMs = now;
     }
-    renderBeams(state, now, true);
+    renderBeams(now, true);
   }
   function stopAlternateAction() {
     if (!alternateHeld) {
@@ -299,7 +308,6 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
 // src/register.js
 function registerLastPrism({
   api: api2,
-  sandkit: sandkit2,
   lastPrism: lastPrism2,
   beamController: beamController2,
   itemId,
@@ -382,10 +390,7 @@ function registerLastPrism({
       beamController2.stopAlternateAction();
       return;
     }
-    const state = sandkit2.engine.state;
-    if (state) {
-      beamController2.handleAlternateAction(state);
-    }
+    beamController2.handleAlternateAction();
   };
   api2.input.registerBinding(divergenceBindingId, ["MouseRight"], {
     displayNameKey: "mods|paragax.lastPrism|input|diverge|name",
@@ -397,9 +402,8 @@ function registerLastPrism({
     }
   });
   api2.events.on("game:started", () => {
-    const inventory = sandkit2.engine.state?.store?.player?.inventory;
-    if (!inventory?.some((item) => item.id === itemId)) {
-      api2.player.inventory.addFromId(itemId);
+    if (!api2.player.inventory.hasById(itemId)) {
+      api2.player.inventory.addById(itemId);
       api2.ui.toast("Last Prism added to inventory");
     }
   });
@@ -412,8 +416,6 @@ var { ActionState } = sandkit.enums;
 var ITEM_ID = "paragax.last-prism";
 var SPRITE_ID = "paragax.last-prism.sprite";
 var SPRITE_SIZE = { width: 26, height: 30 };
-var NATIVE_WINDUP_MS = 1e3;
-var NATIVE_RANGE_PX = 1e3;
 var BEAM_COUNT = 6;
 var MAX_SPREAD_RADIANS = Math.PI / 12;
 var DAMAGE_UPGRADE_ID = "damage";
@@ -435,13 +437,11 @@ var config = {
   ...nativeLaser.config,
   // TODO: Add a real energy cost after balance testing.
   energyCost: 0,
-  windupMs: NATIVE_WINDUP_MS,
-  maxRangePx: NATIVE_RANGE_PX,
   beamCount: BEAM_COUNT,
   maxSpreadRadians: MAX_SPREAD_RADIANS
 };
 var excavationPattern = api.patterns.createCircle(
-  config.normalPatternSize
+  config.patternSize
 );
 var beamController = createBeamController(
   api,
@@ -476,7 +476,6 @@ var lastPrism = {
 };
 registerLastPrism({
   api,
-  sandkit,
   lastPrism,
   beamController,
   itemId: ITEM_ID,

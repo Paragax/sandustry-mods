@@ -7,8 +7,6 @@ const { ActionState } = sandkit.enums;
 const ITEM_ID = "paragax.last-prism";
 const SPRITE_ID = "paragax.last-prism.sprite";
 const SPRITE_SIZE = { width: 26, height: 30 };
-const NATIVE_WINDUP_MS = 1000;
-const NATIVE_RANGE_PX = 1000;
 const BEAM_COUNT = 6;
 const MAX_SPREAD_RADIANS = Math.PI / 12;
 const DAMAGE_UPGRADE_ID = "damage";
@@ -33,13 +31,11 @@ const config = {
   ...nativeLaser.config,
   // TODO: Add a real energy cost after balance testing.
   energyCost: 0,
-  windupMs: NATIVE_WINDUP_MS,
-  maxRangePx: NATIVE_RANGE_PX,
   beamCount: BEAM_COUNT,
   maxSpreadRadians: MAX_SPREAD_RADIANS,
 };
 const excavationPattern = api.patterns.createCircle(
-  config.normalPatternSize,
+  config.patternSize,
 );
 const beamController = createBeamController(
   api,
@@ -76,7 +72,6 @@ const lastPrism = {
 
 registerLastPrism({
   api,
-  sandkit,
   lastPrism,
   beamController,
   itemId: ITEM_ID,

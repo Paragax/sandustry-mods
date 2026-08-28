@@ -1,6 +1,5 @@
 export function registerLastPrism({
   api,
-  sandkit,
   lastPrism,
   beamController,
   itemId,
@@ -92,12 +91,7 @@ export function registerLastPrism({
       return;
     }
 
-    // Input callbacks do not receive state. Keep this unstable escape hatch
-    // isolated until Sandustry exposes current state through the public API.
-    const state = sandkit.engine.state;
-    if (state) {
-      beamController.handleAlternateAction(state);
-    }
+    beamController.handleAlternateAction();
   };
   api.input.registerBinding(divergenceBindingId, ["MouseRight"], {
     displayNameKey: "mods|paragax.lastPrism|input|diverge|name",
@@ -109,9 +103,8 @@ export function registerLastPrism({
     },
   });
   api.events.on("game:started", () => {
-    const inventory = sandkit.engine.state?.store?.player?.inventory;
-    if (!inventory?.some((item) => item.id === itemId)) {
-      api.player.inventory.addFromId(itemId);
+    if (!api.player.inventory.hasById(itemId)) {
+      api.player.inventory.addById(itemId);
       api.ui.toast("Last Prism added to inventory");
     }
   });

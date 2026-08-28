@@ -1,7 +1,7 @@
 [b][u]Terraria's Last Prism reimagined as a Sandustry mining laser[/u][/b]
 
 [b][u]IMPORTANT[/u][/b]
-This mod currently requires Sandustry's [b]mods[/b] Steam beta branch. Subscribe, restart the game, and enable the mod before loading a save that contains the Last Prism.
+Subscribe, restart the game, and enable the mod before loading a save that contains the Last Prism.
 
 This is intentionally an overpowered mod. It consumes no energy, and all upgrades are currently free.
 
