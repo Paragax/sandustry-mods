@@ -10,6 +10,8 @@ Copy this directory to `mods/<Mod Name>/`, then replace every occurrence of:
 Replace the placeholder `workshop/preview.png` before preparing or publishing
 the Workshop item.
 Keep `publishedFileId` set to `"0"` until the first successful upload.
+Set the Workshop metadata `gameVersion` range to the Sandustry versions the
+release supports.
 Before committing the cloned mod, remove all template comments, placeholder
 values, unused example code, and this README.
 

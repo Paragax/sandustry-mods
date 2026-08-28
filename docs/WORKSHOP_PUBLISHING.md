@@ -1,65 +1,44 @@
-# Steam Workshop Publishing
+# Workshop Publishing for Sandustry 0.5.5
 
-Workshop publishing is handled by `scripts/publish-workshop.ps1`. Sandustry's
-runtime mod format and this repository's publishing metadata are separate.
+> Official Sandkit source: <https://sandustry.com/sandkit.html>
+> Synced: 2026-08-28
 
-## Source Layout
+## Officially documented files
 
-Each published mod can keep its Steam-facing files together:
+The Sandustry 0.5.5 Sandkit page documents two root-level Workshop files:
 
 ```text
-mods/
-  example-mod/
-    modinfo.json
-    main.js
-    assets/
-    workshop/
-      metadata.json
-      description.txt
-      preview.png
+example-mod/
+├── preview.png      # 512x512px, required for Workshop upload
+└── workshop.json    # generated after the first upload (don't change!)
 ```
 
-`workshop/metadata.json` supports:
+The official page does not document the upload command, publisher UI,
+`workshop.json` schema, SteamCMD workflow, or any separate publishing metadata
+format. Do not infer those details from older game builds.
+
+## Repository-specific tooling
+
+This repository still contains the pre-0.5.5 SteamCMD publisher and
+`<mod>/workshop/metadata.json` convention. Those are repository tooling, not
+official Sandkit 0.5.5 APIs or manifest fields.
+
+Repository metadata records the intended Workshop version link using the same
+minimum/maximum convention as the 0.5.5 manifest:
 
 ```json
 {
-  "title": "Example Mod",
-  "publishedFileId": "0",
-  "descriptionFile": "description.txt",
-  "previewFile": "preview.png",
-  "visibility": "Private"
+  "gameVersion": {
+    "maximum": "0.5.2"
+  }
 }
 ```
 
-Description content is passed to Steam as raw text. Steam BBCode is supported;
-Markdown is not converted. File paths are relative to `metadata.json` and must
-remain inside `workshop/`. Visibility can be `Private`, `FriendsOnly`, `Public`,
-or `Unlisted`. Use `"0"` as `publishedFileId` for a new item; after Steam creates
-it, the publisher writes the assigned ID back to metadata. Existing mods keep
-their current Steam Workshop item ID there. The entire directory is
-publisher-only and is not copied into the staged runtime mod.
+The publisher validates and reports this range, but SteamCMD does not apply it.
+After publishing an old patch-based release, open its Steam Workshop page and
+set `Change Notes -> Link to Game Version -> Maximum` to `0.5.2`. For a release
+that uses the 0.5.5 API, set the minimum to `0.5.5` instead.
 
-## Release Environments
-
-Prepare and inspect the artifact without uploading:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
-  .\scripts\publish-workshop.ps1 `
-  ".\mods\Last Prism\workshop\metadata.json" -PrepareOnly
-```
-
-Upload using the visibility declared in metadata:
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
-  .\scripts\publish-workshop.ps1 `
-  ".\mods\Last Prism\workshop\metadata.json"
-```
-
-In deployment terms, `-PrepareOnly` builds the artifact. Set metadata visibility
-to `Private` for subscribed-copy testing and `Public` for production.
-
-The generated `.workshop/` staging directory and VDF are local-only and
-disposable. Tracked `workshop/metadata.json` is the source of truth for which
-Workshop item receives an update.
+Assume that workflow is incompatible until it is explicitly revalidated
+against Sandustry 0.5.5. Do not publish with it based only on the old local
+instructions.
