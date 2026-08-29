@@ -209,8 +209,11 @@ if (-not $steamCmd) {
   throw "SteamCMD was not found. Pass -SteamCmdPath with the full path to steamcmd.exe."
 }
 
-while ([string]::IsNullOrWhiteSpace($SteamUser)) {
+if ([string]::IsNullOrWhiteSpace($SteamUser)) {
   $SteamUser = Read-Host "Steam account login name"
+}
+if ([string]::IsNullOrWhiteSpace($SteamUser)) {
+  throw "Steam account login name is required. Pass -SteamUser when running non-interactively."
 }
 Write-Host "SteamCMD will securely prompt for your password and Steam Guard code."
 & $steamCmd.Source "+login" $SteamUser "+workshop_build_item" $vdfPath "+quit"
