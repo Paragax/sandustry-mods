@@ -16,7 +16,7 @@ function enableAchievements() {
   }
 }
 
-// Undocumented: Sandustry 0.5.2 emits this after loading every external mod
+// Undocumented: Sandustry 0.5.5 emits this after loading every external mod
 // and immediately before scanning existing achievement progress.
 api.events.on("mods:initialized", enableAchievements);
 

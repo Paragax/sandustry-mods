@@ -6,5 +6,5 @@ This mod does not unlock achievements directly. You must still meet each
 achievement's normal in-game requirements.
 
 [b][u]Compatibility[/u][/b]
-This mod targets Sandustry 0.5.2 on the Steam mods branch. Game updates may
-require a compatibility update.
+This mod targets Sandustry 0.5.5. It relies on undocumented game state, so
+future game updates may require a compatibility update.

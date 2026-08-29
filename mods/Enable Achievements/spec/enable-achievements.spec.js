@@ -3,8 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 async function test() {
-  const source = fs.readFileSync(path.resolve(__dirname, "../main.js"), "utf8");
+  const root = path.resolve(__dirname, "..");
+  const source = fs.readFileSync(path.join(root, "main.js"), "utf8");
   assert.doesNotMatch(source, /^\s*(?:import|export)\s/m);
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "modinfo.json")));
+  assert.equal(manifest.gameVersion.minimum, "0.5.5");
 
   const eventHandlers = {};
   const nextTickCallbacks = [];

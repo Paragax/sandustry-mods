@@ -7,6 +7,9 @@
   "entry": "main.js",
   "description": "Enables native Steam achievement checks while playing with Sandustry mods.",
   "author": "Paragax",
+  "gameVersion": {
+    "minimum": "0.5.5"
+  },
   "dependencies": [],
   "loadOrder": 0
 }
