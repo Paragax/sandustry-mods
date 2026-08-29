@@ -7,6 +7,9 @@
   "entry": "main.js",
   "description": "Reloads a local Sandustry mod after its built JavaScript changes.",
   "author": "Paragax",
+  "gameVersion": {
+    "minimum": "0.5.5"
+  },
   "dependencies": [],
   "loadOrder": -1000
 }

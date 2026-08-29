@@ -25,4 +25,4 @@ Once per second, Hot Reload checks each local mod's generated [b]main.js[/b] and
 [/list]
 
 [b][u]Compatibility[/u][/b]
-Targets Sandustry 0.5.2 on Steam's mods branch. This developer tool relies on an exact-match bundle patch and undocumented save/load internals, so game updates may require a compatibility update. Back up development saves.
+Targets Sandustry 0.5.5. This developer tool relies on an exact-match bundle patch and undocumented save/load internals, so game updates may require a compatibility update. Back up development saves.

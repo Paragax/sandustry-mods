@@ -1,6 +1,6 @@
 const api = sandkit.api;
 const engine = sandkit.engine;
-const gameScene = 4; // Undocumented Sandustry 0.5.2 scene value.
+const gameScene = 4; // Undocumented Sandustry 0.5.5 scene value.
 
 let refreshing = false;
 let polling = false;
@@ -32,7 +32,7 @@ function reload(change) {
   const saveId = `${state.store.meta.worldId}-hot-reload`;
 
   // Undocumented: the raw game API expects state and exposes the active save
-  // operation. Sandustry 0.5.2 invokes these callbacks after worker sync.
+  // operation. Sandustry invokes these callbacks after worker sync.
   try {
     game.save(state, "Hot Reload", saveId);
   } catch {

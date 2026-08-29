@@ -80,6 +80,8 @@ async function test() {
   }
 
   const patches = JSON.parse(fs.readFileSync(path.join(root, "patches.json")));
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "modinfo.json")));
+  assert.equal(manifest.gameVersion.minimum, "0.5.5");
   assert.equal(patches[0].expectedMatches, 1);
   assert.match(patches[0].code, /rootUrl/);
   assert.match(patches[0].code, /discoveredVia/);
