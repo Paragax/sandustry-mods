@@ -3,8 +3,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 async function test() {
-  const source = fs.readFileSync(path.resolve(__dirname, "../main.js"), "utf8");
+  const root = path.resolve(__dirname, "..");
+  const source = fs.readFileSync(path.join(root, "main.js"), "utf8");
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, "modinfo.json"), "utf8"));
   assert.doesNotMatch(source, /^\s*(?:import|export)\s/m);
+  assert.equal(manifest.version, "0.1.1");
+  assert.equal(manifest.gameVersion.minimum, "0.5.6");
 
   const registered = [];
   const registeredUpgrades = [];
@@ -15,7 +19,7 @@ async function test() {
   const lasers = [];
   const lights = [];
   const excavations = [];
-  const elementReplacements = [];
+  const meltedCells = [];
   const sounds = [];
   const inventory = [];
   const spriteLoads = [];
@@ -49,9 +53,6 @@ async function test() {
         return { destroy: noop };
       },
       createParticlesAtWorld: noop,
-    },
-    elements: {
-      getTypeById: (id) => ({ water: 4 })[id],
     },
     events: { on: (id, handler) => { eventHandlers[id] = handler; } },
     grid: {
@@ -115,6 +116,7 @@ async function test() {
     terrains: {
       getTypeById: (id) => ({ ice: 25 })[id],
       getTypeAtCell: () => terrainTypeAtHit,
+      meltAtCell: (cellX, cellY) => meltedCells.push([cellX, cellY]),
     },
     ui: { toast: noop },
     upgrades: {
@@ -127,11 +129,6 @@ async function test() {
       register: (definition) => registeredUpgrades.push(definition),
     },
   };
-  api.grid.mutate = (callback) => callback({
-    elements: {
-      replaceAtCell: (...args) => elementReplacements.push(args),
-    },
-  });
   const state = {
     session: {
       action: { state: { 1: true, 2: true } },
@@ -282,21 +279,20 @@ async function test() {
   const excavationsBeforeIce = excavations.length;
   registered[0].handleAction(state);
   assert.equal(excavations.length, excavationsBeforeIce + 1);
-  assert.equal(elementReplacements.length, 0);
+  assert.equal(meltedCells.length, 0);
 
   iceMeltUpgradeLevel = 1;
   registered[0].handleAction(state);
   assert.equal(excavations.length, excavationsBeforeIce + 1);
-  assert.equal(elementReplacements.length, 9);
-  assert.ok(elementReplacements.every(
-    ([x, y, elementType]) =>
-      x >= 9 && x <= 11 && y >= 19 && y <= 21 && elementType === 4,
+  assert.equal(meltedCells.length, 9);
+  assert.ok(meltedCells.every(
+    ([x, y]) => x >= 9 && x <= 11 && y >= 19 && y <= 21,
   ));
 
   terrainTypeAtHit = 23;
   registered[0].handleAction(state);
   assert.equal(excavations.length, excavationsBeforeIce + 2);
-  assert.equal(elementReplacements.length, 9);
+  assert.equal(meltedCells.length, 9);
 
   const lasersBeforeUnlock = lasers.length;
   divergenceBinding.definition.handlers.down();

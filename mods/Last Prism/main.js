@@ -23,7 +23,6 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   const COLOR_CYCLE_MS = 1800;
   const NATIVE_ORIGIN_OFFSET_CELLS = { x: 1.25, y: 3 };
   const ICE_TERRAIN_TYPE = api2.terrains.getTypeById("ice");
-  const WATER_ELEMENT_TYPE = api2.elements.getTypeById("water");
   let beamGraphics = [];
   let chargeProgress = 0;
   let chargeUpdatedAtMs = null;
@@ -121,17 +120,10 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   }
   function meltIceAtImpact(hit, frame) {
     const radius = frame.width / (frame.cellSize * 2);
-    api2.grid.mutate((writer) => {
-      api2.grid.forEachCellInCircle(
-        hit.cellX,
-        hit.cellY,
-        radius,
-        (cellX, cellY) => {
-          if (api2.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
-            writer.elements.replaceAtCell(cellX, cellY, WATER_ELEMENT_TYPE);
-          }
-        }
-      );
+    api2.grid.forEachCellInCircle(hit.cellX, hit.cellY, radius, (cellX, cellY) => {
+      if (api2.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
+        api2.terrains.meltAtCell(cellX, cellY);
+      }
     });
   }
   function createImpact(index, hit, endX, endY, angle, color, frame) {

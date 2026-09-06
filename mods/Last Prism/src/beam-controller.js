@@ -17,7 +17,6 @@ export function createBeamController(
   // the native laser's player-relative origin in the installed 0.5.5 build.
   const NATIVE_ORIGIN_OFFSET_CELLS = { x: 1.25, y: 3 };
   const ICE_TERRAIN_TYPE = api.terrains.getTypeById("ice");
-  const WATER_ELEMENT_TYPE = api.elements.getTypeById("water");
 
   let beamGraphics = [];
   let chargeProgress = 0;
@@ -135,17 +134,10 @@ export function createBeamController(
 
   function meltIceAtImpact(hit, frame) {
     const radius = frame.width / (frame.cellSize * 2);
-    api.grid.mutate((writer) => {
-      api.grid.forEachCellInCircle(
-        hit.cellX,
-        hit.cellY,
-        radius,
-        (cellX, cellY) => {
-          if (api.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
-            writer.elements.replaceAtCell(cellX, cellY, WATER_ELEMENT_TYPE);
-          }
-        },
-      );
+    api.grid.forEachCellInCircle(hit.cellX, hit.cellY, radius, (cellX, cellY) => {
+      if (api.terrains.getTypeAtCell(cellX, cellY) === ICE_TERRAIN_TYPE) {
+        api.terrains.meltAtCell(cellX, cellY);
+      }
     });
   }
 
