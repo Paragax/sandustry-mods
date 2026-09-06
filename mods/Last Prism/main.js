@@ -21,7 +21,9 @@ function hexToLightColor(color) {
 // src/beam-controller.js
 function createBeamController(api2, ActionState2, config2, excavationPattern2, itemId, damageUpgradeId, damagePerLevel, thicknessUpgradeId, thicknessPerLevelPercent, iceMeltUpgradeId) {
   const COLOR_CYCLE_MS = 1800;
-  const NATIVE_ORIGIN_OFFSET_CELLS = { x: 1.25, y: 3 };
+  const HAND_OFFSET_CELLS = { x: 1.25, y: 3.5 };
+  const MUZZLE_OFFSET_CELLS = 4;
+  const MUZZLE_POSITION_NUDGE_PIXELS = { forward: -5, y: 5 };
   const ICE_TERRAIN_TYPE = api2.terrains.getTypeById("ice");
   let beamGraphics = [];
   let chargeProgress = 0;
@@ -68,10 +70,13 @@ function createBeamController(api2, ActionState2, config2, excavationPattern2, i
   function getBeamFrame(now, alternate) {
     const player = api2.player.getPositionAtWorld();
     const cellSize = api2.rendering.getGridMetrics().cellSize;
-    const originX = player.x + NATIVE_ORIGIN_OFFSET_CELLS.x * cellSize;
-    const originY = player.y + NATIVE_ORIGIN_OFFSET_CELLS.y * cellSize;
+    const handX = player.x + HAND_OFFSET_CELLS.x * cellSize;
+    const handY = player.y + HAND_OFFSET_CELLS.y * cellSize + MUZZLE_POSITION_NUDGE_PIXELS.y;
     const mouse = api2.input.getMousePositionAtWorld();
-    const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
+    const aimAngle = Math.atan2(mouse.y - handY, mouse.x - handX);
+    const muzzleDistance = MUZZLE_OFFSET_CELLS * cellSize + MUZZLE_POSITION_NUDGE_PIXELS.forward;
+    const originX = handX + Math.cos(aimAngle) * muzzleDistance;
+    const originY = handY + Math.sin(aimAngle) * muzzleDistance;
     if (!alternate) {
       const elapsedMs = chargeUpdatedAtMs === null ? 0 : Math.max(now - chargeUpdatedAtMs, 0);
       chargeUpdatedAtMs = now;

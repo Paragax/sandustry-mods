@@ -7,7 +7,7 @@ async function test() {
   const source = fs.readFileSync(path.join(root, "main.js"), "utf8");
   const manifest = JSON.parse(fs.readFileSync(path.join(root, "modinfo.json"), "utf8"));
   assert.doesNotMatch(source, /^\s*(?:import|export)\s/m);
-  assert.equal(manifest.version, "0.1.1");
+  assert.equal(manifest.version, "0.1.2");
   assert.equal(manifest.gameVersion.minimum, "0.5.6");
 
   const registered = [];
@@ -210,7 +210,16 @@ async function test() {
 
   registered[0].handleAction(state);
   assert.equal(lasers.length, 6);
-  assert.deepEqual(lasers[0].slice(0, 2), [-15, 2]);
+  const handX = 5;
+  const handY = 19;
+  const initialAimAngle = Math.atan2(50 - handY, 100 - handX);
+  const muzzleDistance = 11;
+  assert.ok(Math.abs(lasers[0][0] - (
+    handX + Math.cos(initialAimAngle) * muzzleDistance - 20
+  )) < 1e-12);
+  assert.ok(Math.abs(lasers[0][1] - (
+    handY + Math.sin(initialAimAngle) * muzzleDistance - 10
+  )) < 1e-12);
   assert.equal(excavations.length, 6);
   assert.ok(excavations.every((excavation) => excavation[4] === 1));
   assert.ok(new Set(raycastAngles.slice(1)).size > 1);
@@ -220,7 +229,7 @@ async function test() {
   now = 1000;
   state.session.action.state = { 2: true };
   raycastHits = false;
-  const aimAngle = Math.atan2(50 - 12, 100 - 5);
+  const aimAngle = initialAimAngle;
   const fullChargeSoundsBefore = sounds.filter(
     (id) => id === "charge_up_2",
   ).length;

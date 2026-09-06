@@ -13,9 +13,11 @@ export function createBeamController(
   iceMeltUpgradeId,
 ) {
   const COLOR_CYCLE_MS = 1800;
-  // Sandustry 0.5.5 does not expose the held-item origin. These offsets match
-  // the native laser's player-relative origin in the installed 0.5.5 build.
-  const NATIVE_ORIGIN_OFFSET_CELLS = { x: 1.25, y: 3 };
+  // Sandkit does not expose a held-item origin. Anchor at the player's hand,
+  // then project to the end of the held prism along the supported aim vector.
+  const HAND_OFFSET_CELLS = { x: 1.25, y: 3.5 };
+  const MUZZLE_OFFSET_CELLS = 4;
+  const MUZZLE_POSITION_NUDGE_PIXELS = { forward: -5, y: 5 };
   const ICE_TERRAIN_TYPE = api.terrains.getTypeById("ice");
 
   let beamGraphics = [];
@@ -67,10 +69,15 @@ export function createBeamController(
   function getBeamFrame(now, alternate) {
     const player = api.player.getPositionAtWorld();
     const cellSize = api.rendering.getGridMetrics().cellSize;
-    const originX = player.x + NATIVE_ORIGIN_OFFSET_CELLS.x * cellSize;
-    const originY = player.y + NATIVE_ORIGIN_OFFSET_CELLS.y * cellSize;
+    const handX = player.x + HAND_OFFSET_CELLS.x * cellSize;
+    const handY = player.y + HAND_OFFSET_CELLS.y * cellSize +
+      MUZZLE_POSITION_NUDGE_PIXELS.y;
     const mouse = api.input.getMousePositionAtWorld();
-    const aimAngle = Math.atan2(mouse.y - originY, mouse.x - originX);
+    const aimAngle = Math.atan2(mouse.y - handY, mouse.x - handX);
+    const muzzleDistance = MUZZLE_OFFSET_CELLS * cellSize +
+      MUZZLE_POSITION_NUDGE_PIXELS.forward;
+    const originX = handX + Math.cos(aimAngle) * muzzleDistance;
+    const originY = handY + Math.sin(aimAngle) * muzzleDistance;
     if (!alternate) {
       const elapsedMs = chargeUpdatedAtMs === null
         ? 0
