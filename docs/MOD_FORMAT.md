@@ -1,8 +1,8 @@
-# Sandustry 0.5.5 Mod Format
+# Sandustry 0.5.6 Mod Format
 
 > Source of truth: <https://sandustry.com/sandkit.html>
-> Synced: 2026-08-28
-> Target game version: Sandustry 0.5.5
+> Synced: 2026-09-06
+> Target game version: Sandustry 0.5.6
 
 Older local format notes are obsolete. If this document conflicts with the
 official Sandkit page, use the official page.
@@ -137,7 +137,7 @@ that patch-based mods will most likely break whenever Sandustry updates.
 
 ## Workshop files
 
-For Sandustry 0.5.5, the official mod layout requires a root `preview.png` at
+For Sandustry 0.5.6, the official mod layout requires a root `preview.png` at
 512x512 pixels for Workshop upload. Sandustry generates root `workshop.json`
 after the first upload; do not edit that file.
 

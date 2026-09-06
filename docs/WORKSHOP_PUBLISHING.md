@@ -1,11 +1,11 @@
-# Workshop Publishing for Sandustry 0.5.5
+# Workshop Publishing for Sandustry 0.5.6
 
 > Official Sandkit source: <https://sandustry.com/sandkit.html>
-> Synced: 2026-08-28
+> Synced: 2026-09-06
 
 ## Officially documented files
 
-The Sandustry 0.5.5 Sandkit page documents two root-level Workshop files:
+The Sandustry 0.5.6 Sandkit page documents two root-level Workshop files:
 
 ```text
 example-mod/
@@ -21,10 +21,10 @@ format. Do not infer those details from older game builds.
 
 This repository still contains the pre-0.5.5 SteamCMD publisher and
 `<mod>/workshop/metadata.json` convention. Those are repository tooling, not
-official Sandkit 0.5.5 APIs or manifest fields.
+official Sandkit 0.5.6 APIs or manifest fields.
 
 Repository metadata records the intended Workshop version link using the same
-minimum/maximum convention as the 0.5.5 manifest:
+minimum/maximum convention as the 0.5.6 manifest:
 
 ```json
 {
@@ -40,4 +40,5 @@ SteamCMD does not apply it. Keep the runtime compatibility range in
 
 Set Workshop compatibility manually under
 `Change Notes -> Link to Game Version`. The SteamCMD workflow was successfully
-revalidated with Sandustry 0.5.5 on 2026-08-28.
+last revalidated with Sandustry 0.5.5 on 2026-08-28; revalidate before a
+0.5.6 Workshop release.

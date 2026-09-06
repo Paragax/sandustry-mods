@@ -1,11 +1,11 @@
-# Sandkit 0.5.5 Reference
+# Sandkit 0.5.6 Reference
 
 > Source of truth: <https://sandustry.com/sandkit.html>
-> Synced: 2026-08-28
-> Target game version: Sandustry 0.5.5
+> Synced: 2026-09-06
+> Target game version: Sandustry 0.5.6
 
 This file replaces the previous local API reference. APIs and formats absent
-from the official 0.5.5 page must be treated as unsupported, even if an older
+from the official 0.5.6 page must be treated as unsupported, even if an older
 repository document or game build exposed them.
 
 ## Mod file structure
@@ -1407,6 +1407,21 @@ api.events.on("upgrade:levelSelected", (payload) => {
 ```text
 api.events.on("building:placed", (payload) => {
   onBuildingPlaced(payload.structure, payload.x, payload.y);
+});
+```
+
+##### `building:removing`
+
+- `eventId`: `"building:removing"`
+- `callback(payload)`
+- `payload.structureId`
+- `payload.x`
+- `payload.y`
+- `payload.byMove`
+
+```text
+api.events.on("building:removing", (payload) => {
+  prepareBuildingRemoval(payload.structureId, payload.x, payload.y);
 });
 ```
 
@@ -2818,6 +2833,10 @@ api.tech.conservatory.appendUnlock(sandkit.enums.Tech.SignalDevices, {
 
 - `damageAtCell(cellX, cellY, damage)`
 
+#### `meltAtCell(cellX, cellY)`
+
+Applies Sandustry's native terrain-melting behavior at a cell.
+
 #### `setHitPointsAtCell(cellX, cellY, hitPoints)`
 
 - Deprecated alias: `setHpAtCell(cellX, cellY, hitPoints)` and `setHpAtCellWhenIdle(cellX, cellY, hitPoints)`
@@ -3505,6 +3524,19 @@ api.hooks.intercept("fire:element:burn", (args, context) => {
 });
 ```
 
+##### `fire:terrain:burn`
+
+- `hookId`: `"fire:terrain:burn"`
+- `callback(args, context)`
+- `options.guard.terrainType` (required)
+- `options.priority` (optional)
+
+```text
+api.hooks.intercept("fire:terrain:burn", handleTerrainBurn, {
+  guard: { terrainType },
+});
+```
+
 ##### `shaker:elementOn`
 
 - `hookId`: `"shaker:elementOn"`
@@ -3602,6 +3634,8 @@ api.patterns.excavateAtCell(
 - `removeAtCell(cellX, cellY, options?)`
 
 - `damageAtCell(cellX, cellY, damage)`
+
+- `meltAtCell(cellX, cellY)`
 
 ### `api.ui`
 
